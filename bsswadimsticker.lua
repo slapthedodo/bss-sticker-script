@@ -54,9 +54,9 @@ LoadConfig()
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
-    Name = "testbss schlip schlop benutzer schnittstelle",
+    Name = "bss schlip schlop benutzer schnittstelle",
     LoadingTitle = "Loading...",
-    LoadingSubtitle = "hoppe hoppe reiter ich hoff ich leb nicht weiter",
+    LoadingSubtitle = "test hoppe hoppe reiter ich hoff ich leb nicht weiter",
     ConfigurationSaving = {
         Enabled = false,
     },
@@ -67,7 +67,7 @@ local Window = Rayfield:CreateWindow({
 local FarmTab = Window:CreateTab("Generators", 4483362458)
 
 FarmTab:CreateToggle({
-    Name = "Auto Bronze Star Amulet (+Reject) (für sticker)",
+    Name = "Auto Bronze Star Amulet (+Reject) (für stitestcker)",
     CurrentValue = Settings.BronzeStar,
     Flag = "BronzeStar", 
     Callback = function(Value)
