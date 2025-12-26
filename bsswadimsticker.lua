@@ -18,7 +18,7 @@ local Settings = {
     DiamondStar = false,
     FieldDice = false,
     Snowflake = false,
-    ShowCooldowns = false
+    ShowCooldowns = true
 }
 
 -- UI für Cooldowns
