@@ -67,7 +67,7 @@ local Window = Rayfield:CreateWindow({
 local FarmTab = Window:CreateTab("Generators", 4483362458)
 
 FarmTab:CreateToggle({
-    Name = "Auto Bronze Star Amulet (+Reject) (für sticker)",
+    Name = "Auto Bronze Star Amulet (+Reject) (für sticker) test",
     CurrentValue = Settings.BronzeStar,
     Flag = "BronzeStar", 
     Callback = function(Value)
@@ -191,7 +191,7 @@ task.spawn(function()
                 -- Warten bis der Reject-Button klickbar ist
                 local NoButton = LocalPlayer.PlayerGui.ScreenGui.RewardsPopUp:WaitForChild("NoButton", 3)
                 if NoButton then
-                    repeat task.wait(.05) until NoButton.Visible or not Settings.BronzeStar
+                    repeat task.wait() until NoButton.Visible or not Settings.BronzeStar
                     firesignal(NoButton.MouseButton1Click)
                 end
             end)
@@ -206,7 +206,7 @@ task.spawn(function()
                 -- Warten bis der Reject-Button klickbar ist
                 local NoButton = LocalPlayer.PlayerGui.ScreenGui.RewardsPopUp:WaitForChild("NoButton", 3)
                 if NoButton then
-                    repeat task.wait(.05) until NoButton.Visible or not Settings.DiamondStar
+                    repeat task.wait() until NoButton.Visible or not Settings.DiamondStar
                     firesignal(NoButton.MouseButton1Click)
                 end
             end)
