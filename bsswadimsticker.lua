@@ -150,6 +150,13 @@ local Window = Rayfield:CreateWindow({
     KeySystem = false,
 })
 
+-- Versuchen das Fenster zu minimieren
+pcall(function()
+    if Window.Minimize then
+        Window:Minimize()
+    end
+end)
+
 -- TAB: Generators
 local FarmTab = Window:CreateTab("Generators", 4483362458)
 
