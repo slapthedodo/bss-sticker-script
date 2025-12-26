@@ -16,7 +16,8 @@ local FileName = "BeeSwarmRayfield_" .. LocalPlayer.UserId .. ".json"
 local Settings = {
     BronzeStar = false,
     DiamondStar = false,
-    FieldDice = false
+    FieldDice = false,
+    Snowflake = false
 }
 
 -- [FUNKTIONEN] Speichern und Laden
@@ -41,6 +42,7 @@ local function LoadConfig()
             if result.BronzeStar ~= nil then Settings.BronzeStar = result.BronzeStar end
             if result.DiamondStar ~= nil then Settings.DiamondStar = result.DiamondStar end
             if result.FieldDice ~= nil then Settings.FieldDice = result.FieldDice end
+            if result.Snowflake ~= nil then Settings.Snowflake = result.Snowflake end
         end
     end
 end
@@ -54,7 +56,7 @@ local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 local Window = Rayfield:CreateWindow({
     Name = "Bee Swarm Script",
     LoadingTitle = "Loading...",
-    LoadingSubtitle = "By Gemini",
+    LoadingSubtitle = "hoppe hoppe reiter ich hoff ich leb nicht weiter",
     ConfigurationSaving = {
         Enabled = false,
     },
@@ -94,11 +96,74 @@ FarmTab:CreateToggle({
     end,
 })
 
+FarmTab:CreateToggle({
+    Name = "Auto Snowflake",
+    CurrentValue = Settings.Snowflake,
+    Flag = "Snowflake",
+    Callback = function(Value)
+        Settings.Snowflake = Value
+        SaveConfig()
+    end,
+})
+
+-- TAB: Masks
+local MaskTab = Window:CreateTab("Masks", 4483362458)
+local MaskEquipping = false
+
+local function TweenToMask(position, maskType)
+    if MaskEquipping then return end
+    MaskEquipping = true
+    
+    local Character = LocalPlayer.Character
+    if not Character then MaskEquipping = false return end
+    local HumRoot = Character:FindFirstChild("HumanoidRootPart")
+    if not HumRoot then MaskEquipping = false return end
+    
+    local TweenService = game:GetService("TweenService")
+    local oldPos = HumRoot.Position
+    
+    local function doTween(targetPos)
+        local distance = (targetPos - HumRoot.Position).Magnitude
+        local duration = distance / 70
+        local tween = TweenService:Create(HumRoot, TweenInfo.new(duration, Enum.EasingStyle.Linear, Enum.EasingDirection.Out), {
+            CFrame = CFrame.new(targetPos)
+        })
+        tween:Play()
+        tween.Completed:Wait()
+    end
+    
+    doTween(position)
+    
+    local args = {
+        [1] = "Equip",
+        [2] = {
+            ["Type"] = maskType,
+            ["Category"] = "Accessory"
+        }
+    }
+    ReplicatedStorage.Events.ItemPackageEvent:InvokeServer(unpack(args))
+    task.wait(0.5)
+    
+    doTween(oldPos)
+    MaskEquipping = false
+end
+
+MaskTab:CreateButton({
+    Name = "Equip Diamond Mask",
+    Callback = function()
+        TweenToMask(Vector3.new(-338, 132, -400), "Diamond Mask")
+    end,
+})
+
+MaskTab:CreateButton({
+    Name = "Equip Demon Mask",
+    Callback = function()
+        TweenToMask(Vector3.new(304, 28, 275), "Demon Mask")
+    end,
+})
+
 -- TAB: Settings (Für Unload)
 local SettingsTab = Window:CreateTab("Settings", 4483362458)
-
--- Der Mini-Button Referenz (wird gleich erstellt)
-local ScreenGui 
 
 SettingsTab:CreateButton({
     Name = "Unload Script (Stop & Close)",
@@ -109,53 +174,9 @@ SettingsTab:CreateButton({
         -- 2. Rayfield zerstören
         Rayfield:Destroy()
         
-        -- 3. Mini-Button zerstören
-        if ScreenGui then
-            ScreenGui:Destroy()
-        end
-        
         print("Script unloaded successfully.")
     end,
 })
-
--- [MINI TOGGLE BUTTON ERSTELLEN]
-ScreenGui = Instance.new("ScreenGui")
-local ToggleBtn = Instance.new("TextButton")
-local UICorner = Instance.new("UICorner")
-
-if syn and syn.protect_gui then
-    syn.protect_gui(ScreenGui)
-    ScreenGui.Parent = CoreGui
-elseif gethui then
-    ScreenGui.Parent = gethui()
-else
-    ScreenGui.Parent = CoreGui
-end
-
-ScreenGui.Name = "RayfieldToggleMini"
-
-ToggleBtn.Name = "MiniButton"
-ToggleBtn.Parent = ScreenGui
-ToggleBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-ToggleBtn.Position = UDim2.new(1, -40, 0, 10) 
-ToggleBtn.Size = UDim2.new(0, 30, 0, 30)
-ToggleBtn.Font = Enum.Font.FredokaOne
-ToggleBtn.Text = "UI"
-ToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-ToggleBtn.TextSize = 14.000
-ToggleBtn.AutoButtonColor = true
-
-UICorner.CornerRadius = UDim.new(0, 4)
-UICorner.Parent = ToggleBtn
-
-local uiOpen = true
-ToggleBtn.MouseButton1Click:Connect(function()
-    uiOpen = not uiOpen
-    local rayfieldUI = game:GetService("CoreGui"):FindFirstChild("Rayfield")
-    if rayfieldUI then
-        rayfieldUI.Enabled = uiOpen
-    end
-end)
 
 -- [HAUPT LOGIK LOOP]
 task.spawn(function()
@@ -168,7 +189,7 @@ task.spawn(function()
                 local args = {[1] = "Bronze Star Amulet Generator"}
                 ReplicatedStorage.Events.ToyEvent:FireServer(unpack(args))
                 task.wait(0.05) 
-                ReplicatedStorage.Events.ClientRejectAmulet:FireServer()
+                firesignal(game:GetService("Players").LocalPlayer.PlayerGui.ScreenGui.RewardsPopUp.NoButton.MouseButton1Click)
             end)
         end
 
@@ -178,7 +199,7 @@ task.spawn(function()
                 local args = {[1] = "Diamond Star Amulet Generator"}
                 ReplicatedStorage.Events.ToyEvent:FireServer(unpack(args))
                 task.wait(0.05) 
-                ReplicatedStorage.Events.ClientRejectAmulet:FireServer()
+                firesignal(game:GetService("Players").LocalPlayer.PlayerGui.ScreenGui.RewardsPopUp.NoButton.MouseButton1Click)
             end)
         end
 
@@ -186,6 +207,14 @@ task.spawn(function()
         if Settings.FieldDice then
             pcall(function()
                 local args = {[1] = {["Name"] = "Field Dice"}}
+                ReplicatedStorage.Events.PlayerActivesCommand:FireServer(unpack(args))
+            end)
+        end
+
+        -- 4. Snowflake Logic
+        if Settings.Snowflake then
+            pcall(function()
+                local args = {[1] = {["Name"] = "Snowflake"}}
                 ReplicatedStorage.Events.PlayerActivesCommand:FireServer(unpack(args))
             end)
         end
