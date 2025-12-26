@@ -179,17 +179,21 @@ SettingsTab:CreateButton({
 })
 
 -- [HAUPT LOGIK LOOP]
+-- Loop 1: Stars und Field Dice (1.05s)
 task.spawn(function()
-    -- Der Loop läuft nur solange ScriptRunning wahr ist
     while ScriptRunning do
-        
         -- 1. Bronze Star Logic
         if Settings.BronzeStar then
             pcall(function()
                 local args = {[1] = "Bronze Star Amulet Generator"}
                 ReplicatedStorage.Events.ToyEvent:FireServer(unpack(args))
-                task.wait(0.05) 
-                firesignal(game:GetService("Players").LocalPlayer.PlayerGui.ScreenGui.RewardsPopUp.NoButton.MouseButton1Click)
+                
+                -- Warten bis der Reject-Button klickbar ist
+                local NoButton = LocalPlayer.PlayerGui.ScreenGui.RewardsPopUp:WaitForChild("NoButton", 3)
+                if NoButton then
+                    repeat task.wait(.05) until NoButton.Visible or not Settings.BronzeStar
+                    firesignal(NoButton.MouseButton1Click)
+                end
             end)
         end
 
@@ -198,8 +202,13 @@ task.spawn(function()
             pcall(function()
                 local args = {[1] = "Diamond Star Amulet Generator"}
                 ReplicatedStorage.Events.ToyEvent:FireServer(unpack(args))
-                task.wait(0.05) 
-                firesignal(game:GetService("Players").LocalPlayer.PlayerGui.ScreenGui.RewardsPopUp.NoButton.MouseButton1Click)
+                
+                -- Warten bis der Reject-Button klickbar ist
+                local NoButton = LocalPlayer.PlayerGui.ScreenGui.RewardsPopUp:WaitForChild("NoButton", 3)
+                if NoButton then
+                    repeat task.wait(.05) until NoButton.Visible or not Settings.DiamondStar
+                    firesignal(NoButton.MouseButton1Click)
+                end
             end)
         end
 
@@ -210,15 +219,20 @@ task.spawn(function()
                 ReplicatedStorage.Events.PlayerActivesCommand:FireServer(unpack(args))
             end)
         end
+        
+        task.wait(1.05)
+    end
+end)
 
-        -- 4. Snowflake Logic
+-- Loop 2: Snowflake (3.05s)
+task.spawn(function()
+    while ScriptRunning do
         if Settings.Snowflake then
             pcall(function()
                 local args = {[1] = {["Name"] = "Snowflake"}}
                 ReplicatedStorage.Events.PlayerActivesCommand:FireServer(unpack(args))
             end)
         end
-        
         task.wait(3.05)
     end
 end)
