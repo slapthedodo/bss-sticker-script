@@ -615,7 +615,29 @@ task.spawn(function()
     while ScriptRunning do
         if Settings.AutoHit and game.PlaceId == 17579225831 then
             pcall(function()
-                ReplicatedStorage.Events.ToolCollect:FireServer(LocalPlayer.Character.HumanoidRootPart.Position)
+                if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+                    local tool = LocalPlayer.Character:FindFirstChildOfClass("Tool")
+                    if tool then
+                        -- Cooldown checken
+                        local toolCooldown = tool:FindFirstChild("Cooldown")
+                        if toolCooldown then
+                            local cooldownValue = toolCooldown.Value or 0
+                            local currentTime = tick()
+                            
+                            if currentTime >= cooldownValue then
+                                -- Animation laden und spielen
+                                local humanoid = LocalPlayer.Character.Humanoid
+                                if humanoid then
+                                    local animationTrack = humanoid:LoadAnimation(tool.Animation)
+                                    animationTrack:Play()
+                                end
+                                
+                                -- Tool benutzen
+                                ReplicatedStorage.Events.ToolCollect:FireServer(LocalPlayer.Character.HumanoidRootPart.Position)
+                            end
+                        end
+                    end
+                end
             end)
         end
         task.wait(0.1)
