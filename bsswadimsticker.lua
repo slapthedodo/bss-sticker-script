@@ -528,7 +528,7 @@ task.spawn(function()
             end
             
             -- Auto Claim Hive Logic (nur einmalig)
-            if Settings.AutoClaimHive and not HiveClaimedInRBC then
+            if Settings.AutoClaimHive and not HiveClaimedInRBC and LocalPlayer.Character then
                 HiveClaimedInRBC = true -- Setzen, damit es nicht nochmal ausgeführt wird
                 print("Starte Auto Claim Hive...")
                 
