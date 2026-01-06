@@ -654,10 +654,10 @@ task.spawn(function()
                 -- Character hinlegen und nach oben schauen lassen
                 Humanoid.PlatformStand = true
                 -- Rotation fixieren: Schaut nach oben (Bauch nach unten, Gesicht zum Himmel)
-                local upRotation = CFrame.Angles(math.rad(-90), 0, 0)
+                local upRotation = CFrame.Angles(math.rad(90), 0, 0)
                 
                 -- Ziel-Y ist fest auf -5
-                local targetY = -5
+                local targetY = 45
                 
                 local TargetSlimeBlob = nil
                 for i = 1, 14 do
