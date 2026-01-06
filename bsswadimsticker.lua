@@ -3,6 +3,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local CoreGui = game:GetService("CoreGui")
+local TeleportService = game:GetService("TeleportService")
 
 local LocalPlayer = Players.LocalPlayer
 
@@ -307,6 +308,16 @@ MaskTab:CreateButton({
     Name = "Equip Demon Mask",
     Callback = function()
         TweenToMask(Vector3.new(304, 28, 275), "Demon Mask")
+    end,
+})
+
+-- TAB: RBC
+local RBCTab = Window:CreateTab("RBC", 4483362458)
+
+RBCTab:CreateButton({
+    Name = "Teleport to RBC",
+    Callback = function()
+        TeleportService:Teleport(17579225831, LocalPlayer)
     end,
 })
 
