@@ -691,7 +691,7 @@ task.spawn(function()
                     local distance = (adjustedTarget - HumanoidRootPart.Position).Magnitude
                     
                     if distance > 1 then
-                        local speed = 60
+                        local speed = 69
                         local duration = distance / speed
                         local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear)
                         
