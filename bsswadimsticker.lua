@@ -632,6 +632,13 @@ task.spawn(function()
         if Settings.AutoSlimeKill and game.PlaceId == 17579225831 then
             if not lastToggleState then
                 lastToggleState = true
+                -- ClassicBaseplate Collision ausschalten
+                pcall(function()
+                    local classicBaseplate = workspace.ClassicMinigame.ClassicBaseplate
+                    if classicBaseplate then
+                        classicBaseplate.CanCollide = false
+                    end
+                end)
                 -- 10 Sekunden warten beim ersten Einschalten
                 task.wait(10)
             end
@@ -659,8 +666,8 @@ task.spawn(function()
                 Humanoid.PlatformStand = true
                 
                 -- Rotation fixieren: Schaut nach oben (Bauch nach unten, Gesicht zum Himmel)
-                local upRotation = CFrame.Angles(math.rad(-90), 0, 0) -- Korrektur: -90 Grad für Bauch nach unten
-                local targetY = 285 -- Feste Höhe
+                local upRotation = CFrame.Angles(math.rad(90), 0, 0) -- Korrektur: -90 Grad für Bauch nach unten
+                local targetY = 280 -- Feste Höhe
 
                 local TargetSlimeBlob = nil
                 for i = 1, 14 do
@@ -716,7 +723,7 @@ task.spawn(function()
                         platform.CFrame = CFrame.new(HumanoidRootPart.Position - Vector3.new(0, 3, 0))
                     end
                 else
-                    -- Auch ohne Ziel auf Y 285 und Rotation nach oben bleiben
+                    -- Auch ohne Ziel auf Y 280 und Rotation nach oben bleiben
                     HumanoidRootPart.CFrame = CFrame.new(HumanoidRootPart.Position.X, targetY, HumanoidRootPart.Position.Z) * upRotation
                     platform.CFrame = CFrame.new(HumanoidRootPart.Position - Vector3.new(0, 3, 0))
                 end
@@ -725,6 +732,13 @@ task.spawn(function()
             if lastToggleState then
                 lastToggleState = false
                 if platform then platform:Destroy() platform = nil end
+                -- ClassicBaseplate Collision wieder anschalten
+                pcall(function()
+                    local classicBaseplate = workspace.ClassicMinigame.ClassicBaseplate
+                    if classicBaseplate then
+                        classicBaseplate.CanCollide = true
+                    end
+                end)
                 pcall(function()
                     if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
                         LocalPlayer.Character.Humanoid.PlatformStand = false
