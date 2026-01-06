@@ -23,7 +23,9 @@ local Settings = {
     RedCannon = false,
     BlueCannon = false,
     YellowCannon = false,
-    ShowCooldowns = true
+    ShowCooldowns = true,
+    AutoRBC = false,
+    AutoRBCLobby = false
 }
 
 -- UI für Cooldowns
@@ -139,6 +141,8 @@ local function LoadConfig()
             if result.BlueCannon ~= nil then Settings.BlueCannon = result.BlueCannon end
             if result.YellowCannon ~= nil then Settings.YellowCannon = result.YellowCannon end
             if result.ShowCooldowns ~= nil then Settings.ShowCooldowns = result.ShowCooldowns end
+            if result.AutoRBC ~= nil then Settings.AutoRBC = result.AutoRBC end
+            if result.AutoRBCLobby ~= nil then Settings.AutoRBCLobby = result.AutoRBCLobby end
         end
     end
 end
@@ -315,9 +319,38 @@ MaskTab:CreateButton({
 local RBCTab = Window:CreateTab("RBC", 4483362458)
 
 RBCTab:CreateButton({
-    Name = "Teleport to RBC",
+    Name = "tp to rbc (atlas bypass and direct join)",
     Callback = function()
         TeleportService:Teleport(17579225831, LocalPlayer)
+    end,
+})
+
+RBCTab:CreateButton({
+    Name = "tp to rbc lobby (atlas bypass)",
+    Callback = function()
+        TeleportService:Teleport(17579226768, LocalPlayer)
+    end,
+})
+
+RBCTab:CreateSection("Auto tp (every 10s if in Main Game)")
+
+RBCTab:CreateToggle({
+    Name = "auto teleport rbc",
+    CurrentValue = Settings.AutoRBC,
+    Flag = "AutoRBC",
+    Callback = function(Value)
+        Settings.AutoRBC = Value
+        SaveConfig()
+    end,
+})
+
+RBCTab:CreateToggle({
+    Name = "auto teleport rbc Lobby",
+    CurrentValue = Settings.AutoRBCLobby,
+    Flag = "AutoRBCLobby",
+    Callback = function(Value)
+        Settings.AutoRBCLobby = Value
+        SaveConfig()
     end,
 })
 
@@ -428,5 +461,19 @@ task.spawn(function()
             end)
         end
         task.wait(Settings.SnowflakeDelay)
+    end
+end)
+
+-- Loop 3: Auto Teleport (10s)
+task.spawn(function()
+    while ScriptRunning do
+        if game.PlaceId == 1537690962 then
+            if Settings.AutoRBC then
+                TeleportService:Teleport(17579225831, LocalPlayer)
+            elseif Settings.AutoRBCLobby then
+                TeleportService:Teleport(17579226768, LocalPlayer)
+            end
+        end
+        task.wait(10)
     end
 end)
