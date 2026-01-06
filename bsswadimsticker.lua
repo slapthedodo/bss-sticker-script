@@ -653,7 +653,7 @@ task.spawn(function()
                 -- Zu Startposition gehen
                 if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
                     local HumanoidRootPart = LocalPlayer.Character.HumanoidRootPart
-                    local startPos = Vector3.new(-47071.2852, 291.907898, 320.037537)
+                    local startPos = Vector3.new(-47190.1133, 290.470581, 186.999374)
                     local distance = (startPos - HumanoidRootPart.Position).Magnitude
                     local speed = 69
                     local duration = distance / speed
@@ -694,126 +694,79 @@ task.spawn(function()
                 local upRotation = CFrame.Angles(math.rad(90), 0, 0)
                 local targetY = 280
 
-                -- Slime finden: robustere Suche (minimale |Z-230|, Tie-Breaker: Distanz zum Spieler)
+                -- Slime finden: wähle Blob mit kleinstem |Z-230|, bei Gleichstand nächster zur Player-Position
                 local TargetSlimeBlob = nil
-                local bestZDiff = math.huge
-                local bestPlayerDist = math.huge
-                local humanoidPos = HumanoidRootPart.Position
+                local closestZDiff = math.huge
+                local closestTieDist = math.huge
 
-                local monstersFolder = workspace:FindFirstChild("Monsters")
-                if monstersFolder then
-                    for _, monster in pairs(monstersFolder:GetChildren()) do
-                        -- Suche in Descendants nach Parts, deren Name mit "Blob" beginnt
-                        for _, desc in pairs(monster:GetDescendants()) do
-                            if desc:IsA("BasePart") and tostring(desc.Name):match("^Blob") then
-                                local zDiff = math.abs(desc.Position.Z - 230)
-                                local playerDist = (desc.Position - humanoidPos).Magnitude
-                                if zDiff < bestZDiff or (zDiff == bestZDiff and playerDist < bestPlayerDist) then
-                                    bestZDiff = zDiff
-                                    bestPlayerDist = playerDist
-                                    TargetSlimeBlob = desc
+                for i = 1, 14 do
+                    local slimeMonsterName = "Slime (Lvl " .. i .. ")"
+                    local slimeMonsterFolder = game.workspace.Monsters:FindFirstChild(slimeMonsterName)
+                    if slimeMonsterFolder then
+                        local slimeMonster = slimeMonsterFolder:FindFirstChild("SlimeMonster")
+                        if slimeMonster then
+                            local blob1 = slimeMonster:FindFirstChild("Blob1")
+                            if blob1 and blob1:IsA("BasePart") then
+                                local zDiff = math.abs(blob1.Position.Z - 230)
+                                local playerDist = (blob1.Position - HumanoidRootPart.Position).Magnitude
+                                if zDiff < closestZDiff or (zDiff == closestZDiff and playerDist < closestTieDist) then
+                                    closestZDiff = zDiff
+                                    closestTieDist = playerDist
+                                    TargetSlimeBlob = blob1
                                 end
                             end
                         end
                     end
                 end
 
-                -- Wenn kein Slime gefunden, suche nach Collectibles mit Name == "C" und tween zum nächsten
+                -- Wenn kein Slime gefunden, zuerst nach Collectibles 'C' innerhalb 400 Radius suchen
                 if not TargetSlimeBlob then
-                    local collectiblesFolder = workspace:FindFirstChild("Collectibles")
-                    local nearestCollectible = nil
-                    local nearestCollectibleDist = math.huge
-
-                    if collectiblesFolder then
-                        for _, col in pairs(collectiblesFolder:GetChildren()) do
-                            if tostring(col.Name) == "C" then
-                                -- Bestimme Position des Collectibles
-                                local colPos = nil
-                                if col:IsA("BasePart") then
-                                    colPos = col.Position
-                                elseif col:IsA("Model") then
-                                    if col.PrimaryPart then
-                                        colPos = col.PrimaryPart.Position
-                                    else
-                                        for _, p in pairs(col:GetDescendants()) do
-                                            if p:IsA("BasePart") then
-                                                colPos = p.Position
-                                                break
-                                            end
-                                        end
-                                    end
-                                end
-
-                                if colPos then
-                                    local d = (colPos - humanoidPos).Magnitude
-                                    if d < nearestCollectibleDist then
-                                        nearestCollectibleDist = d
-                                        nearestCollectible = col
+                    local foundCollect = nil
+                    local foundCollectDist = math.huge
+                    pcall(function()
+                        if workspace:FindFirstChild("Collectibles") then
+                            for _, c in pairs(workspace.Collectibles:GetChildren()) do
+                                if c and c:IsA("BasePart") and c.Name == "C" then
+                                    local d = (c.Position - HumanoidRootPart.Position).Magnitude
+                                    if d <= 400 and d < foundCollectDist then
+                                        foundCollectDist = d
+                                        foundCollect = c
                                     end
                                 end
                             end
                         end
-                    end
+                    end)
 
-                    if nearestCollectible then
-                        -- Tween zum nächsten Collectible; Abbrechen, falls Slime erscheint
-                        local colPos = nil
-                        if nearestCollectible:IsA("BasePart") then
-                            colPos = nearestCollectible.Position
-                        elseif nearestCollectible:IsA("Model") then
-                            colPos = (nearestCollectible.PrimaryPart and nearestCollectible.PrimaryPart.Position) or (nearestCollectible:GetChildren()[1] and nearestCollectible:GetChildren()[1].Position)
-                        end
+                    if foundCollect then
+                        -- Kurz zum Collectible tweenen, kurz berühren, dann zurück
+                        local prevCFrame = HumanoidRootPart.CFrame
+                        local collectPos = foundCollect.Position
+                        local collectTarget = Vector3.new(collectPos.X, targetY, collectPos.Z)
+                        local dist = (collectTarget - HumanoidRootPart.Position).Magnitude
+                        local speed = 69
+                        local duration = math.max(0.05, dist / speed)
+                        local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear)
 
-                        if colPos then
-                            local speed = 69
-                            local distance = (colPos - HumanoidRootPart.Position).Magnitude
-                            local duration = math.max(0.01, distance / speed)
-                            local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear)
-                            local targetCFrame = CFrame.new(colPos) * upRotation
+                        local targetCFrame = CFrame.new(collectTarget) * upRotation
+                        local tween = TweenService:Create(HumanoidRootPart, tweenInfo, {CFrame = targetCFrame})
+                        local platTween = TweenService:Create(platform, tweenInfo, {CFrame = CFrame.new(collectTarget - Vector3.new(0, 3, 0))})
+                        tween:Play()
+                        platTween:Play()
+                        tween.Completed:Wait()
 
-                            local tween = TweenService:Create(HumanoidRootPart, tweenInfo, {CFrame = targetCFrame})
-                            local platTween = TweenService:Create(platform, tweenInfo, {CFrame = CFrame.new(colPos - Vector3.new(0, 3, 0))})
-                            tween:Play()
-                            platTween:Play()
+                        -- kurz berühren
+                        task.wait(0.12)
 
-                            local conn
-                            conn = game:GetService("RunService").Heartbeat:Connect(function()
-                                if not Settings.AutoSlimeKill or game.PlaceId ~= 17579225831 then
-                                    if conn then conn:Disconnect() end
-                                    if tween then pcall(function() tween:Cancel() end) end
-                                    return
-                                end
-
-                                -- Falls während des Collectible-Tweens wieder Slimes erscheinen, abbrechen und priorisieren
-                                local foundAny = false
-                                local mf = workspace:FindFirstChild("Monsters")
-                                if mf then
-                                    for _, m in pairs(mf:GetChildren()) do
-                                        for _, d in pairs(m:GetDescendants()) do
-                                            if d:IsA("BasePart") and tostring(d.Name):match("^Blob") then
-                                                foundAny = true
-                                                break
-                                            end
-                                        end
-                                        if foundAny then break end
-                                    end
-                                end
-
-                                if foundAny then
-                                    if conn then conn:Disconnect() end
-                                    if tween then pcall(function() tween:Cancel() end) end
-                                    return
-                                end
-
-                                HumanoidRootPart.AssemblyLinearVelocity = Vector3.zero
-                                HumanoidRootPart.AssemblyAngularVelocity = Vector3.zero
-                            end)
-
-                            tween.Completed:Wait()
-                            if conn then conn:Disconnect() end
-                        end
+                        -- zurück zur vorherigen Position
+                        local returnDist = (prevCFrame.Position - HumanoidRootPart.Position).Magnitude
+                        local returnDur = math.max(0.05, returnDist / speed)
+                        local returnTween = TweenService:Create(HumanoidRootPart, TweenInfo.new(returnDur, Enum.EasingStyle.Linear), {CFrame = prevCFrame})
+                        local returnPlat = TweenService:Create(platform, TweenInfo.new(returnDur, Enum.EasingStyle.Linear), {CFrame = CFrame.new(prevCFrame.Position - Vector3.new(0, 3, 0))})
+                        returnTween:Play()
+                        returnPlat:Play()
+                        returnTween.Completed:Wait()
                     else
-                        -- Keine Collectibles: gehe zur definierten Fallback-Position
+                        -- Kein Collectible, gehe zur Fallback Position
                         local fallbackPos = Vector3.new(-47064, 291.907898, -183.909866)
                         local distance = (fallbackPos - HumanoidRootPart.Position).Magnitude
                         if distance > 1 then
@@ -824,6 +777,7 @@ task.spawn(function()
 
                             local tween = TweenService:Create(HumanoidRootPart, tweenInfo, {CFrame = targetCFrame})
                             local platTween = TweenService:Create(platform, tweenInfo, {CFrame = CFrame.new(fallbackPos - Vector3.new(0, 3, 0))})
+
                             tween:Play()
                             platTween:Play()
 
@@ -845,24 +799,22 @@ task.spawn(function()
                         end
                     end
                 else
-                    -- Slime gefunden: hinge zum Slime mit fixer Y
+                    -- Ziel-Slime gefunden: tween zum Slime (Y fixed to targetY)
                     local targetPos = TargetSlimeBlob.Position
                     local adjustedTarget = Vector3.new(targetPos.X, targetY, targetPos.Z)
                     local distance = (adjustedTarget - HumanoidRootPart.Position).Magnitude
-                    
                     if distance > 1 then
                         local speed = 69
                         local duration = distance / speed
                         local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear)
-                        
+
                         local targetCFrame = CFrame.new(adjustedTarget) * upRotation
-                        
                         local tween = TweenService:Create(HumanoidRootPart, tweenInfo, {CFrame = targetCFrame})
                         local platTween = TweenService:Create(platform, tweenInfo, {CFrame = CFrame.new(adjustedTarget - Vector3.new(0, 3, 0))})
-                        
+
                         tween:Play()
                         platTween:Play()
-                        
+
                         local conn
                         conn = game:GetService("RunService").Heartbeat:Connect(function()
                             if not Settings.AutoSlimeKill or not tween or game.PlaceId ~= 17579225831 then 
@@ -872,7 +824,7 @@ task.spawn(function()
                             HumanoidRootPart.AssemblyLinearVelocity = Vector3.zero
                             HumanoidRootPart.AssemblyAngularVelocity = Vector3.zero
                         end)
-                        
+
                         tween.Completed:Wait()
                         if conn then conn:Disconnect() end
                     else
