@@ -694,25 +694,25 @@ task.spawn(function()
                 local upRotation = CFrame.Angles(math.rad(90), 0, 0)
                 local targetY = 280
 
-                -- Slime finden: wähle Blob mit kleinstem |Z-230|, bei Gleichstand nächster zur Player-Position
+                -- Slime finden: prüfe alle Blob*-Parts unter allen SlimeMonstern.
+                -- Priorität: kleinstes |Z-230|, Tie-Breaker: geringster horizontaler Abstand (X,Z) zur Z=230-Ebene in Relation zum Spieler
                 local TargetSlimeBlob = nil
-                local closestZDiff = math.huge
-                local closestTieDist = math.huge
+                local bestZDiff = math.huge
+                local bestTie = math.huge
 
-                for i = 1, 14 do
-                    local slimeMonsterName = "Slime (Lvl " .. i .. ")"
-                    local slimeMonsterFolder = game.workspace.Monsters:FindFirstChild(slimeMonsterName)
-                    if slimeMonsterFolder then
-                        local slimeMonster = slimeMonsterFolder:FindFirstChild("SlimeMonster")
+                if workspace:FindFirstChild("Monsters") then
+                    for _, monsterFolder in pairs(workspace.Monsters:GetChildren()) do
+                        local slimeMonster = monsterFolder:FindFirstChild("SlimeMonster")
                         if slimeMonster then
-                            local blob1 = slimeMonster:FindFirstChild("Blob1")
-                            if blob1 and blob1:IsA("BasePart") then
-                                local zDiff = math.abs(blob1.Position.Z - 230)
-                                local playerDist = (blob1.Position - HumanoidRootPart.Position).Magnitude
-                                if zDiff < closestZDiff or (zDiff == closestZDiff and playerDist < closestTieDist) then
-                                    closestZDiff = zDiff
-                                    closestTieDist = playerDist
-                                    TargetSlimeBlob = blob1
+                            for _, desc in pairs(slimeMonster:GetDescendants()) do
+                                if desc:IsA("BasePart") and tostring(desc.Name):match("^Blob") then
+                                    local zDiff = math.abs(desc.Position.Z - 230)
+                                    local horizDist = (Vector2.new(desc.Position.X - HumanoidRootPart.Position.X, desc.Position.Z - 230)).Magnitude
+                                    if zDiff < bestZDiff or (zDiff == bestZDiff and horizDist < bestTie) then
+                                        bestZDiff = zDiff
+                                        bestTie = horizDist
+                                        TargetSlimeBlob = desc
+                                    end
                                 end
                             end
                         end
@@ -738,23 +738,30 @@ task.spawn(function()
                     end)
 
                     if foundCollect then
-                        -- Kurz zum Collectible tweenen, kurz berühren, dann zurück
+                        -- Kurz zum Collectible tweenen, kurz berühren (mit firetouchinterest), dann zurück
                         local prevCFrame = HumanoidRootPart.CFrame
                         local collectPos = foundCollect.Position
                         local collectTarget = Vector3.new(collectPos.X, targetY, collectPos.Z)
                         local dist = (collectTarget - HumanoidRootPart.Position).Magnitude
                         local speed = 69
                         local duration = math.max(0.05, dist / speed)
-                        local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear)
 
                         local targetCFrame = CFrame.new(collectTarget) * upRotation
-                        local tween = TweenService:Create(HumanoidRootPart, tweenInfo, {CFrame = targetCFrame})
-                        local platTween = TweenService:Create(platform, tweenInfo, {CFrame = CFrame.new(collectTarget - Vector3.new(0, 3, 0))})
+                        local tween = TweenService:Create(HumanoidRootPart, TweenInfo.new(duration, Enum.EasingStyle.Linear), {CFrame = targetCFrame})
+                        local platTween = TweenService:Create(platform, TweenInfo.new(duration, Enum.EasingStyle.Linear), {CFrame = CFrame.new(collectTarget - Vector3.new(0, 3, 0))})
                         tween:Play()
                         platTween:Play()
                         tween.Completed:Wait()
 
-                        -- kurz berühren
+                        -- Versuche mit firetouchinterest kurz zu berühren (robuster als nur warten)
+                        pcall(function()
+                            local hrp = HumanoidRootPart
+                            if foundCollect and hrp and foundCollect:IsA("BasePart") then
+                                firetouchinterest(foundCollect, hrp, 0)
+                                firetouchinterest(foundCollect, hrp, 1)
+                            end
+                        end)
+
                         task.wait(0.12)
 
                         -- zurück zur vorherigen Position
