@@ -662,7 +662,7 @@ task.spawn(function()
 
                 -- Berechne die Distanz und Dauer für den Tween (langsam)
                 local distance = (adjustedTargetPosition - currentPosition).Magnitude
-                local duration = distance / 8 -- Etwas schneller als 5, aber immer noch langsam
+                local duration = distance / 88 -- Etwas schneller als 5, aber immer noch langsam
 
                 local tweenInfo = TweenInfo.new(
                     duration,
