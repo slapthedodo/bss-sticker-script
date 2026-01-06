@@ -689,7 +689,7 @@ task.spawn(function()
                 
                 -- Rotation fixieren: Schaut nach oben (Bauch nach unten, Gesicht zum Himmel)
                 local upRotation = CFrame.Angles(math.rad(90), 0, 0) -- Korrektur: -90 Grad für Bauch nach unten
-                local targetY = 280 -- Feste Höhe
+                local targetY = 285 -- Feste Höhe
 
                 local TargetSlimeBlob = nil
                 for i = 1, 14 do
@@ -745,7 +745,7 @@ task.spawn(function()
                         platform.CFrame = CFrame.new(HumanoidRootPart.Position - Vector3.new(0, 3, 0))
                     end
                 else
-                    -- Auch ohne Ziel auf Y 280 und Rotation nach oben bleiben
+                    -- Auch ohne Ziel auf Y 285 und Rotation nach oben bleiben
                     HumanoidRootPart.CFrame = CFrame.new(HumanoidRootPart.Position.X, targetY, HumanoidRootPart.Position.Z) * upRotation
                     platform.CFrame = CFrame.new(HumanoidRootPart.Position - Vector3.new(0, 3, 0))
                 end
