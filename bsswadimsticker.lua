@@ -671,7 +671,7 @@ task.spawn(function()
                 
                 -- Geschwindigkeit stark drosseln (Dungeon Quest style)
                 -- Wenn Distanz groß, längere Dauer erzwingen
-                local speed = 6 -- Studs pro Sekunde
+                local speed = 55 -- Studs pro Sekunde
                 local duration = math.max(distance / speed, 0.5)
                 
                 local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
