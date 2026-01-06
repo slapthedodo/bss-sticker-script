@@ -634,11 +634,14 @@ task.spawn(function()
 
             -- Suche nach dem Slime Monster Blob1 von Level 1 bis 14
             for i = 1, 14 do
-                local slimePath = "workspace.Monsters["Slime (Lvl " .. i .. ")"].SlimeMonster.Blob1"
-                local foundSlime = pcall(function() return game:FindFirstChild(slimePath) end)
-                if foundSlime and foundSlime ~= nil then
-                    TargetSlimeBlob = foundSlime
-                    break
+                local slimeMonsterName = "Slime (Lvl " .. i .. ")"
+                local slimeMonsterFolder = game.workspace.Monsters:FindFirstChild(slimeMonsterName)
+                if slimeMonsterFolder then
+                    local blob1 = slimeMonsterFolder.SlimeMonster:FindFirstChild("Blob1")
+                    if blob1 then
+                        TargetSlimeBlob = blob1
+                        break
+                    end
                 end
             end
 
