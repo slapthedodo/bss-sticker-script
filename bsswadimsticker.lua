@@ -626,15 +626,28 @@ end)
 task.spawn(function()
     local TweenService = game:GetService("TweenService")
     local lastToggleState = false
+    local platform = nil
 
     while ScriptRunning do
         if Settings.AutoSlimeKill and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") and LocalPlayer.Character:FindFirstChild("Humanoid") then
             lastToggleState = true
             local HumanoidRootPart = LocalPlayer.Character.HumanoidRootPart
             local Humanoid = LocalPlayer.Character.Humanoid
-            local TargetSlimeBlob = nil
 
-            -- Suche nach dem Slime Monster Blob1 von Level 1 bis 14
+            -- Platform erstellen falls nicht vorhanden
+            if not platform or not platform.Parent then
+                platform = Instance.new("Part")
+                platform.Size = Vector3.new(10, 1, 10)
+                platform.Anchored = true
+                platform.Transparency = 1
+                platform.CanCollide = true
+                platform.Name = "SlimeKillPlatform"
+                platform.Parent = workspace
+            end
+
+            Humanoid.PlatformStand = true
+            
+            local TargetSlimeBlob = nil
             for i = 1, 14 do
                 local slimeMonsterName = "Slime (Lvl " .. i .. ")"
                 local slimeMonsterFolder = game.workspace.Monsters:FindFirstChild(slimeMonsterName)
@@ -651,38 +664,38 @@ task.spawn(function()
             end
 
             if TargetSlimeBlob then
-                -- Character "hinlegen" und Bewegung deaktivieren
-                Humanoid.PlatformStand = true
-                
                 local targetPosition = TargetSlimeBlob.Position
-                local currentPosition = HumanoidRootPart.Position
-
-                -- Position etwas über dem Slime
-                local adjustedTargetPosition = Vector3.new(targetPosition.X, targetPosition.Y + 3, targetPosition.Z)
-
-                -- Berechne die Distanz und Dauer für den Tween (langsam)
-                local distance = (adjustedTargetPosition - currentPosition).Magnitude
-                local duration = distance / 88 -- Etwas schneller als 5, aber immer noch langsam
-
-                local tweenInfo = TweenInfo.new(
-                    duration,
-                    Enum.EasingStyle.Linear,
-                    Enum.EasingDirection.Out
-                )
-
-                -- Rotation: Bauch zum Slime (Charakter liegt flach)
-                -- Wir nehmen die aktuelle Position und schauen zum Slime, dann rotieren wir um 90 Grad auf der X-Achse
-                local targetCFrame = CFrame.new(adjustedTargetPosition, targetPosition) * CFrame.Angles(math.rad(-90), 0, 0)
+                local targetY = targetPosition.Y + 3
+                local adjustedTargetPosition = Vector3.new(targetPosition.X, targetY, targetPosition.Z)
                 
-                local tween = TweenService:Create(HumanoidRootPart, tweenInfo, {CFrame = targetCFrame})
-                tween:Play()
-                
-                tween.Completed:Wait()
+                -- Sofortige Ausrichtung und Platform-Positionierung
+                local lookAtCFrame = CFrame.new(HumanoidRootPart.Position, targetPosition) * CFrame.Angles(math.rad(-90), 0, 0)
+                HumanoidRootPart.CFrame = lookAtCFrame
+                platform.CFrame = CFrame.new(HumanoidRootPart.Position - Vector3.new(0, 3, 0))
+
+                local distance = (adjustedTargetPosition - HumanoidRootPart.Position).Magnitude
+                if distance > 1 then
+                    local duration = distance / 10
+                    local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
+                    
+                    local targetCFrame = CFrame.new(adjustedTargetPosition, targetPosition) * CFrame.Angles(math.rad(-90), 0, 0)
+                    
+                    local tween = TweenService:Create(HumanoidRootPart, tweenInfo, {CFrame = targetCFrame})
+                    local platTween = TweenService:Create(platform, tweenInfo, {CFrame = CFrame.new(adjustedTargetPosition - Vector3.new(0, 3, 0))})
+                    
+                    tween:Play()
+                    platTween:Play()
+                    tween.Completed:Wait()
+                end
+            else
+                -- Bauchlage halten auch ohne Ziel
+                HumanoidRootPart.CFrame = CFrame.new(HumanoidRootPart.Position.X, HumanoidRootPart.Position.Y, HumanoidRootPart.Position.Z) * CFrame.Angles(math.rad(-90), 0, 0)
+                platform.CFrame = CFrame.new(HumanoidRootPart.Position - Vector3.new(0, 3, 0))
             end
         else
-            -- Reset wenn Toggle aus
             if lastToggleState then
                 lastToggleState = false
+                if platform then platform:Destroy() platform = nil end
                 pcall(function()
                     if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
                         LocalPlayer.Character.Humanoid.PlatformStand = false
@@ -690,6 +703,6 @@ task.spawn(function()
                 end)
             end
         end
-        task.wait(0.5)
+        task.wait(0.1)
     end
 end)
