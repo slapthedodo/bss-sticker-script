@@ -629,7 +629,7 @@ task.spawn(function()
     local platform = nil
 
     while ScriptRunning do
-        if Settings.AutoSlimeKill then
+        if Settings.AutoSlimeKill and game.PlaceId == 17579225831 then
             if not lastToggleState then
                 lastToggleState = true
                 -- 10 Sekunden warten beim ersten Einschalten
@@ -640,10 +640,14 @@ task.spawn(function()
                 local HumanoidRootPart = LocalPlayer.Character.HumanoidRootPart
                 local Humanoid = LocalPlayer.Character.Humanoid
 
+                -- Physics komplett ausschalten für den Part während das Feature aktiv ist
+                HumanoidRootPart.AssemblyLinearVelocity = Vector3.zero
+                HumanoidRootPart.AssemblyAngularVelocity = Vector3.zero
+
                 -- Platform erstellen
                 if not platform or not platform.Parent then
                     platform = Instance.new("Part")
-                    platform.Size = Vector3.new(10, 1, 10)
+                    platform.Size = Vector3.new(100, 1, 100) -- Große Platform für maximale Sicherheit
                     platform.Anchored = true
                     platform.Transparency = 1
                     platform.CanCollide = true
@@ -653,12 +657,11 @@ task.spawn(function()
 
                 -- Character hinlegen und nach oben schauen lassen
                 Humanoid.PlatformStand = true
+                
                 -- Rotation fixieren: Schaut nach oben (Bauch nach unten, Gesicht zum Himmel)
-                local upRotation = CFrame.Angles(math.rad(90), 0, 0)
-                
-                
-                local targetY = 280
-                
+                local upRotation = CFrame.Angles(math.rad(-90), 0, 0) -- Korrektur: -90 Grad für Bauch nach unten
+                local targetY = 285 -- Feste Höhe
+
                 local TargetSlimeBlob = nil
                 for i = 1, 14 do
                     local slimeMonsterName = "Slime (Lvl " .. i .. ")"
@@ -693,14 +696,27 @@ task.spawn(function()
                         
                         tween:Play()
                         platTween:Play()
+                        
+                        -- Während des Tweens Physics blockieren
+                        local conn
+                        conn = game:GetService("RunService").Heartbeat:Connect(function()
+                            if not Settings.AutoSlimeKill or not tween or game.PlaceId ~= 17579225831 then 
+                                if conn then conn:Disconnect() end
+                                return 
+                            end
+                            HumanoidRootPart.AssemblyLinearVelocity = Vector3.zero
+                            HumanoidRootPart.AssemblyAngularVelocity = Vector3.zero
+                        end)
+                        
                         tween.Completed:Wait()
+                        if conn then conn:Disconnect() end
                     else
                         -- Position halten
                         HumanoidRootPart.CFrame = CFrame.new(HumanoidRootPart.Position.X, targetY, HumanoidRootPart.Position.Z) * upRotation
                         platform.CFrame = CFrame.new(HumanoidRootPart.Position - Vector3.new(0, 3, 0))
                     end
                 else
-                    -- Auch ohne Ziel auf Y -5 und Rotation nach oben bleiben
+                    -- Auch ohne Ziel auf Y 285 und Rotation nach oben bleiben
                     HumanoidRootPart.CFrame = CFrame.new(HumanoidRootPart.Position.X, targetY, HumanoidRootPart.Position.Z) * upRotation
                     platform.CFrame = CFrame.new(HumanoidRootPart.Position - Vector3.new(0, 3, 0))
                 end
@@ -712,6 +728,9 @@ task.spawn(function()
                 pcall(function()
                     if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
                         LocalPlayer.Character.Humanoid.PlatformStand = false
+                        -- Sicherstellen, dass die Physik wieder aktiviert ist
+                        LocalPlayer.Character.HumanoidRootPart.AssemblyLinearVelocity = Vector3.zero
+                        LocalPlayer.Character.HumanoidRootPart.AssemblyAngularVelocity = Vector3.zero
                     end
                 end)
             end
