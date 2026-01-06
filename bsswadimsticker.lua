@@ -694,12 +694,12 @@ task.spawn(function()
                 -- Nach dem Tween Position fixieren
                 if Settings.AutoSlimeKill then
                     HumanoidRootPart.CFrame = targetCFrame
-                    platform.CFrame = CFrame.new(adjustedTargetPosition - Vector3.new(0, 2.5, 0))
+                    platform.CFrame = CFrame.new(adjustedTargetPosition - Vector3.new(0, 5, 0))
                 end
             else
                 -- Bauchlage halten wenn kein Ziel da ist
                 HumanoidRootPart.CFrame = CFrame.new(HumanoidRootPart.Position, HumanoidRootPart.Position + HumanoidRootPart.CFrame.LookVector) * CFrame.Angles(math.rad(-90), 0, 0)
-                platform.CFrame = CFrame.new(HumanoidRootPart.Position - Vector3.new(0, 2.5, 0))
+                platform.CFrame = CFrame.new(HumanoidRootPart.Position - Vector3.new(0, 5, 0))
             end
         else
             if lastToggleState then
