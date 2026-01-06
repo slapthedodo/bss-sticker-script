@@ -634,7 +634,6 @@ task.spawn(function()
             local HumanoidRootPart = LocalPlayer.Character.HumanoidRootPart
             local Humanoid = LocalPlayer.Character.Humanoid
 
-            -- Platform erstellen falls nicht vorhanden
             if not platform or not platform.Parent then
                 platform = Instance.new("Part")
                 platform.Size = Vector3.new(10, 1, 10)
@@ -665,32 +664,42 @@ task.spawn(function()
 
             if TargetSlimeBlob then
                 local targetPosition = TargetSlimeBlob.Position
-                local targetY = targetPosition.Y + 3
-                local adjustedTargetPosition = Vector3.new(targetPosition.X, targetY, targetPosition.Z)
+                -- Etwas tiefer über dem Slime bleiben
+                local adjustedTargetPosition = Vector3.new(targetPosition.X, targetPosition.Y + 2.5, targetPosition.Z)
                 
-                -- Sofortige Ausrichtung und Platform-Positionierung
-                local lookAtCFrame = CFrame.new(HumanoidRootPart.Position, targetPosition) * CFrame.Angles(math.rad(-90), 0, 0)
-                HumanoidRootPart.CFrame = lookAtCFrame
-                platform.CFrame = CFrame.new(HumanoidRootPart.Position - Vector3.new(0, 3, 0))
-
                 local distance = (adjustedTargetPosition - HumanoidRootPart.Position).Magnitude
-                if distance > 1 then
-                    local duration = distance / 10
-                    local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
-                    
-                    local targetCFrame = CFrame.new(adjustedTargetPosition, targetPosition) * CFrame.Angles(math.rad(-90), 0, 0)
-                    
-                    local tween = TweenService:Create(HumanoidRootPart, tweenInfo, {CFrame = targetCFrame})
-                    local platTween = TweenService:Create(platform, tweenInfo, {CFrame = CFrame.new(adjustedTargetPosition - Vector3.new(0, 3, 0))})
-                    
-                    tween:Play()
-                    platTween:Play()
-                    tween.Completed:Wait()
+                
+                -- Geschwindigkeit stark drosseln (Dungeon Quest style)
+                -- Wenn Distanz groß, längere Dauer erzwingen
+                local speed = 6 -- Studs pro Sekunde
+                local duration = math.max(distance / speed, 0.5)
+                
+                local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
+                
+                -- CFrame: Bauch nach unten, Blick zum Slime
+                local targetCFrame = CFrame.new(adjustedTargetPosition, targetPosition) * CFrame.Angles(math.rad(-90), 0, 0)
+                
+                local tween = TweenService:Create(HumanoidRootPart, tweenInfo, {CFrame = targetCFrame})
+                local platTween = TweenService:Create(platform, tweenInfo, {CFrame = CFrame.new(adjustedTargetPosition - Vector3.new(0, 2.5, 0))})
+                
+                tween:Play()
+                platTween:Play()
+                
+                -- Warten bis Ziel erreicht, währenddessen Position halten
+                local startTime = tick()
+                while tick() - startTime < duration and Settings.AutoSlimeKill do
+                    task.wait()
+                end
+                
+                -- Nach dem Tween Position fixieren
+                if Settings.AutoSlimeKill then
+                    HumanoidRootPart.CFrame = targetCFrame
+                    platform.CFrame = CFrame.new(adjustedTargetPosition - Vector3.new(0, 2.5, 0))
                 end
             else
-                -- Bauchlage halten auch ohne Ziel
-                HumanoidRootPart.CFrame = CFrame.new(HumanoidRootPart.Position.X, HumanoidRootPart.Position.Y, HumanoidRootPart.Position.Z) * CFrame.Angles(math.rad(-90), 0, 0)
-                platform.CFrame = CFrame.new(HumanoidRootPart.Position - Vector3.new(0, 3, 0))
+                -- Bauchlage halten wenn kein Ziel da ist
+                HumanoidRootPart.CFrame = CFrame.new(HumanoidRootPart.Position, HumanoidRootPart.Position + HumanoidRootPart.CFrame.LookVector) * CFrame.Angles(math.rad(-90), 0, 0)
+                platform.CFrame = CFrame.new(HumanoidRootPart.Position - Vector3.new(0, 2.5, 0))
             end
         else
             if lastToggleState then
