@@ -615,26 +615,14 @@ task.spawn(function()
     while ScriptRunning do
         if Settings.AutoHit and game.PlaceId == 17579225831 then
             pcall(function()
-                if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-                    local tool = LocalPlayer.Character:FindFirstChildOfClass("Tool")
-                    if tool then
-                        -- Cooldown checken
-                        local toolCooldown = tool:FindFirstChild("Cooldown")
-                        if toolCooldown then
-                            local cooldownValue = toolCooldown.Value or 0
-                            local currentTime = tick()
-                            
-                            if currentTime >= cooldownValue then
-                                -- Animation laden und spielen
-                                local humanoid = LocalPlayer.Character.Humanoid
-                                if humanoid then
-                                    local animationTrack = humanoid:LoadAnimation(tool.Animation)
-                                    animationTrack:Play()
-                                end
-                                
-                                -- Tool benutzen
-                                ReplicatedStorage.Events.ToolCollect:FireServer(LocalPlayer.Character.HumanoidRootPart.Position)
-                            end
+                local character = LocalPlayer.Character
+                if character then
+                    local classicSword = character:FindFirstChild("ClassicSword")
+                    if classicSword then
+                        local handle = classicSword:FindFirstChild("Handle")
+                        if handle then
+                            firetouchinterest(handle, character, 0)
+                            firetouchinterest(handle, character, 1)
                         end
                     end
                 end
@@ -661,6 +649,21 @@ task.spawn(function()
                         classicBaseplate.CanCollide = false
                     end
                 end)
+                
+                -- Zu Startposition gehen
+                if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                    local HumanoidRootPart = LocalPlayer.Character.HumanoidRootPart
+                    local startPos = Vector3.new(-47071.2852, 291.907898, 320.037537)
+                    local distance = (startPos - HumanoidRootPart.Position).Magnitude
+                    local speed = 69
+                    local duration = distance / speed
+                    local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear)
+                    
+                    local tween = TweenService:Create(HumanoidRootPart, tweenInfo, {CFrame = CFrame.new(startPos)})
+                    tween:Play()
+                    tween.Completed:Wait()
+                end
+                
                 -- 10 Sekunden warten beim ersten Einschalten
                 task.wait(10)
             end
@@ -688,10 +691,13 @@ task.spawn(function()
                 Humanoid.PlatformStand = true
                 
                 -- Rotation fixieren: Schaut nach oben (Bauch nach unten, Gesicht zum Himmel)
-                local upRotation = CFrame.Angles(math.rad(90), 0, 0) -- Korrektur: -90 Grad für Bauch nach unten
-                local targetY = 285 -- Feste Höhe
+                local upRotation = CFrame.Angles(math.rad(90), 0, 0)
+                local targetY = 285
 
+                -- Slime finden, der am nächsten an Z: 230 ist
                 local TargetSlimeBlob = nil
+                local closestDistance = math.huge
+                
                 for i = 1, 14 do
                     local slimeMonsterName = "Slime (Lvl " .. i .. ")"
                     local slimeMonsterFolder = game.workspace.Monsters:FindFirstChild(slimeMonsterName)
@@ -700,33 +706,33 @@ task.spawn(function()
                         if slimeMonster then
                             local blob1 = slimeMonster:FindFirstChild("Blob1")
                             if blob1 then
-                                TargetSlimeBlob = blob1
-                                break
+                                local distanceToZ230 = math.abs(blob1.Position.Z - 230)
+                                if distanceToZ230 < closestDistance then
+                                    closestDistance = distanceToZ230
+                                    TargetSlimeBlob = blob1
+                                end
                             end
                         end
                     end
                 end
 
-                if TargetSlimeBlob then
-                    local targetPos = TargetSlimeBlob.Position
-                    local adjustedTarget = Vector3.new(targetPos.X, targetY, targetPos.Z)
-                    local distance = (adjustedTarget - HumanoidRootPart.Position).Magnitude
+                -- Wenn kein Slime gefunden, zur Fallback Position gehen
+                if not TargetSlimeBlob then
+                    local fallbackPos = Vector3.new(-47064, 291.907898, -183.909866)
+                    local distance = (fallbackPos - HumanoidRootPart.Position).Magnitude
                     
                     if distance > 1 then
                         local speed = 69
                         local duration = distance / speed
                         local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear)
-                        
-                        -- CFrame mit fester Rotation nach oben
-                        local targetCFrame = CFrame.new(adjustedTarget) * upRotation
+                        local targetCFrame = CFrame.new(fallbackPos) * upRotation
                         
                         local tween = TweenService:Create(HumanoidRootPart, tweenInfo, {CFrame = targetCFrame})
-                        local platTween = TweenService:Create(platform, tweenInfo, {CFrame = CFrame.new(adjustedTarget - Vector3.new(0, 3, 0))})
+                        local platTween = TweenService:Create(platform, tweenInfo, {CFrame = CFrame.new(fallbackPos - Vector3.new(0, 3, 0))})
                         
                         tween:Play()
                         platTween:Play()
                         
-                        -- Während des Tweens Physics blockieren
                         local conn
                         conn = game:GetService("RunService").Heartbeat:Connect(function()
                             if not Settings.AutoSlimeKill or not tween or game.PlaceId ~= 17579225831 then 
@@ -740,14 +746,43 @@ task.spawn(function()
                         tween.Completed:Wait()
                         if conn then conn:Disconnect() end
                     else
-                        -- Position halten
+                        HumanoidRootPart.CFrame = CFrame.new(fallbackPos) * upRotation
+                        platform.CFrame = CFrame.new(fallbackPos - Vector3.new(0, 3, 0))
+                    end
+                else
+                    local targetPos = TargetSlimeBlob.Position
+                    local adjustedTarget = Vector3.new(targetPos.X, targetY, targetPos.Z)
+                    local distance = (adjustedTarget - HumanoidRootPart.Position).Magnitude
+                    
+                    if distance > 1 then
+                        local speed = 69
+                        local duration = distance / speed
+                        local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear)
+                        
+                        local targetCFrame = CFrame.new(adjustedTarget) * upRotation
+                        
+                        local tween = TweenService:Create(HumanoidRootPart, tweenInfo, {CFrame = targetCFrame})
+                        local platTween = TweenService:Create(platform, tweenInfo, {CFrame = CFrame.new(adjustedTarget - Vector3.new(0, 3, 0))})
+                        
+                        tween:Play()
+                        platTween:Play()
+                        
+                        local conn
+                        conn = game:GetService("RunService").Heartbeat:Connect(function()
+                            if not Settings.AutoSlimeKill or not tween or game.PlaceId ~= 17579225831 then 
+                                if conn then conn:Disconnect() end
+                                return 
+                            end
+                            HumanoidRootPart.AssemblyLinearVelocity = Vector3.zero
+                            HumanoidRootPart.AssemblyAngularVelocity = Vector3.zero
+                        end)
+                        
+                        tween.Completed:Wait()
+                        if conn then conn:Disconnect() end
+                    else
                         HumanoidRootPart.CFrame = CFrame.new(HumanoidRootPart.Position.X, targetY, HumanoidRootPart.Position.Z) * upRotation
                         platform.CFrame = CFrame.new(HumanoidRootPart.Position - Vector3.new(0, 3, 0))
                     end
-                else
-                    -- Auch ohne Ziel auf Y 285 und Rotation nach oben bleiben
-                    HumanoidRootPart.CFrame = CFrame.new(HumanoidRootPart.Position.X, targetY, HumanoidRootPart.Position.Z) * upRotation
-                    platform.CFrame = CFrame.new(HumanoidRootPart.Position - Vector3.new(0, 3, 0))
                 end
             end
         else
