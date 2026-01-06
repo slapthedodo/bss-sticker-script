@@ -31,7 +31,8 @@ local Settings = {
     AutoretroLobby = false,
     retroWalkspeed = false,
     AutoClaimHive = false,
-    AutoHit = false
+    AutoHit = false,
+    AutoSlimeKill = false
 }
 
 -- UI für Cooldowns
@@ -152,6 +153,7 @@ local function LoadConfig()
             if result.retroWalkspeed ~= nil then Settings.retroWalkspeed = result.retroWalkspeed end
             if result.AutoClaimHive ~= nil then Settings.AutoClaimHive = result.AutoClaimHive end
             if result.AutoHit ~= nil then Settings.AutoHit = result.AutoHit end
+            if result.AutoSlimeKill ~= nil then Settings.AutoSlimeKill = result.AutoSlimeKill end
         end
     end
 end
@@ -422,6 +424,16 @@ retroTab:CreateToggle({
     end,
 })
 
+retroTab:CreateToggle({
+    Name = "Auto Slime Kill",
+    CurrentValue = Settings.AutoSlimeKill,
+    Flag = "AutoSlimeKill",
+    Callback = function(Value)
+        Settings.AutoSlimeKill = Value
+        SaveConfig()
+    end,
+})
+
 -- TAB: Settings (Für Unload)
 local SettingsTab = Window:CreateTab("Settings", 4483362458)
 
@@ -607,5 +619,58 @@ task.spawn(function()
             end)
         end
         task.wait(0.1)
+    end
+end)
+
+-- Loop 7: Auto Slime Kill
+task.spawn(function()
+    local TweenService = game:GetService("TweenService")
+    local DebrisService = game:GetService("Debris")
+
+    while ScriptRunning do
+        if Settings.AutoSlimeKill and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            local HumanoidRootPart = LocalPlayer.Character.HumanoidRootPart
+            local TargetSlimeBlob = nil
+
+            -- Suche nach dem Slime Monster Blob1 von Level 1 bis 14
+            for i = 1, 14 do
+                local slimePath = "workspace.Monsters["Slime (Lvl " .. i .. ")"].SlimeMonster.Blob1"
+                local foundSlime = pcall(function() return game:FindFirstChild(slimePath) end)
+                if foundSlime and foundSlime ~= nil then
+                    TargetSlimeBlob = foundSlime
+                    break
+                end
+            end
+
+            if TargetSlimeBlob then
+                local targetPosition = TargetSlimeBlob.Position
+                local currentPosition = HumanoidRootPart.Position
+
+                -- Optional: Etwas über dem Slime positionieren, um nicht im Boden festzustecken
+                local adjustedTargetPosition = Vector3.new(targetPosition.X, targetPosition.Y + 5, targetPosition.Z)
+
+                -- Berechne die Distanz und Dauer für den Tween (langsamer)
+                local distance = (adjustedTargetPosition - currentPosition).Magnitude
+                local duration = distance / 5 -- Passt die Geschwindigkeit an (hier: 5 Studs pro Sekunde)
+
+                local tweenInfo = TweenInfo.new(
+                    duration,
+                    Enum.EasingStyle.Linear, -- Lineare Bewegung für "Dungeon Quest" ähnlichen Stil
+                    Enum.EasingDirection.Out,
+                    0,
+                    false,
+                    0
+                )
+
+                -- Stelle sicher, dass der Charakter aufrecht bleibt
+                -- Setze die CFrame mit der Zielposition und der aktuellen Ausrichtung
+                local targetCFrame = CFrame.new(adjustedTargetPosition) * CFrame.Angles(0, HumanoidRootPart.Orientation.Y, 0)
+                
+                local tween = TweenService:Create(HumanoidRootPart, tweenInfo, {CFrame = targetCFrame})
+                tween:Play()
+                tween.Completed:Wait() -- Warte, bis der Tween abgeschlossen ist
+            end
+        end
+        task.wait(1) -- Wartezeit, bevor der nächste Slime gesucht wird
     end
 end)
