@@ -719,61 +719,89 @@ task.spawn(function()
                     end
                 end
 
-                -- Wenn kein Slime gefunden, zuerst nach Collectibles 'C' innerhalb 400 Radius suchen
+                -- Wenn kein Slime gefunden: Sammle Collectibles 'C' ohne zurückzufliegen
                 if not TargetSlimeBlob then
-                    local foundCollect = nil
-                    local foundCollectDist = math.huge
-                    pcall(function()
-                        if workspace:FindFirstChild("Collectibles") then
-                            for _, c in pairs(workspace.Collectibles:GetChildren()) do
-                                if c and c:IsA("BasePart") and c.Name == "C" then
-                                    local d = (c.Position - HumanoidRootPart.Position).Magnitude
-                                    if d <= 400 and d < foundCollectDist then
-                                        foundCollectDist = d
-                                        foundCollect = c
+                    local collectingTokens = true
+                    while collectingTokens and Settings.AutoSlimeKill and game.PlaceId == 17579225831 do
+                        -- Prüfe nochmal auf neue Slimes (Priorität)
+                        local CheckSlimeBlob = nil
+                        local checkZDiff = math.huge
+                        local checkTie = math.huge
+                        if workspace:FindFirstChild("Monsters") then
+                            for _, monsterFolder in pairs(workspace.Monsters:GetChildren()) do
+                                local slimeMonster = monsterFolder:FindFirstChild("SlimeMonster")
+                                if slimeMonster then
+                                    for _, desc in pairs(slimeMonster:GetDescendants()) do
+                                        if desc:IsA("BasePart") and tostring(desc.Name):match("^Blob") then
+                                            local zDiff = math.abs(desc.Position.Z - 230)
+                                            local horizDist = (Vector2.new(desc.Position.X - HumanoidRootPart.Position.X, desc.Position.Z - 230)).Magnitude
+                                            if zDiff < checkZDiff or (zDiff == checkZDiff and horizDist < checkTie) then
+                                                checkZDiff = zDiff
+                                                checkTie = horizDist
+                                                CheckSlimeBlob = desc
+                                            end
+                                        end
                                     end
                                 end
                             end
                         end
-                    end)
+                        
+                        if CheckSlimeBlob then
+                            -- Slime gefunden, raus aus Token-Loop
+                            TargetSlimeBlob = CheckSlimeBlob
+                            collectingTokens = false
+                            break
+                        end
 
-                    if foundCollect then
-                        -- Kurz zum Collectible tweenen, kurz berühren (mit firetouchinterest), dann zurück
-                        local prevCFrame = HumanoidRootPart.CFrame
-                        local collectPos = foundCollect.Position
-                        local collectTarget = Vector3.new(collectPos.X, targetY, collectPos.Z)
-                        local dist = (collectTarget - HumanoidRootPart.Position).Magnitude
-                        local speed = 69
-                        local duration = math.max(0.05, dist / speed)
-
-                        local targetCFrame = CFrame.new(collectTarget) * upRotation
-                        local tween = TweenService:Create(HumanoidRootPart, TweenInfo.new(duration, Enum.EasingStyle.Linear), {CFrame = targetCFrame})
-                        local platTween = TweenService:Create(platform, TweenInfo.new(duration, Enum.EasingStyle.Linear), {CFrame = CFrame.new(collectTarget - Vector3.new(0, 3, 0))})
-                        tween:Play()
-                        platTween:Play()
-                        tween.Completed:Wait()
-
-                        -- Versuche mit firetouchinterest kurz zu berühren (robuster als nur warten)
+                        -- Suche nächsten 'C'-Token innerhalb 400 Radius
+                        local nextCollect = nil
+                        local nextCollectDist = math.huge
                         pcall(function()
-                            local hrp = HumanoidRootPart
-                            if foundCollect and hrp and foundCollect:IsA("BasePart") then
-                                firetouchinterest(foundCollect, hrp, 0)
-                                firetouchinterest(foundCollect, hrp, 1)
+                            if workspace:FindFirstChild("Collectibles") then
+                                for _, c in pairs(workspace.Collectibles:GetChildren()) do
+                                    if c and c:IsA("BasePart") and c.Name == "C" and c.Parent then
+                                        local d = (c.Position - HumanoidRootPart.Position).Magnitude
+                                        if d <= 400 and d < nextCollectDist then
+                                            nextCollectDist = d
+                                            nextCollect = c
+                                        end
+                                    end
+                                end
                             end
                         end)
 
-                        task.wait(0.12)
+                        if nextCollect then
+                            -- Tween direkt zur Token-Position
+                            local collectPos = nextCollect.Position
+                            local collectTarget = Vector3.new(collectPos.X, collectPos.Y, collectPos.Z)
+                            local dist = (collectTarget - HumanoidRootPart.Position).Magnitude
+                            local speed = 69
+                            local duration = math.max(0.05, dist / speed)
 
-                        -- zurück zur vorherigen Position
-                        local returnDist = (prevCFrame.Position - HumanoidRootPart.Position).Magnitude
-                        local returnDur = math.max(0.05, returnDist / speed)
-                        local returnTween = TweenService:Create(HumanoidRootPart, TweenInfo.new(returnDur, Enum.EasingStyle.Linear), {CFrame = prevCFrame})
-                        local returnPlat = TweenService:Create(platform, TweenInfo.new(returnDur, Enum.EasingStyle.Linear), {CFrame = CFrame.new(prevCFrame.Position - Vector3.new(0, 3, 0))})
-                        returnTween:Play()
-                        returnPlat:Play()
-                        returnTween.Completed:Wait()
-                    else
-                        -- Kein Collectible, gehe zur Fallback Position
+                            local targetCFrame = CFrame.new(collectTarget) * upRotation
+                            local tween = TweenService:Create(HumanoidRootPart, TweenInfo.new(duration, Enum.EasingStyle.Linear), {CFrame = targetCFrame})
+                            local platTween = TweenService:Create(platform, TweenInfo.new(duration, Enum.EasingStyle.Linear), {CFrame = CFrame.new(collectTarget - Vector3.new(0, 3, 0))})
+                            tween:Play()
+                            platTween:Play()
+                            tween.Completed:Wait()
+
+                            -- Berühre Token mit firetouchinterest für ~150ms
+                            pcall(function()
+                                local hrp = HumanoidRootPart
+                                if nextCollect and hrp and nextCollect:IsA("BasePart") and nextCollect.Parent then
+                                    firetouchinterest(nextCollect, hrp, 0)
+                                    firetouchinterest(nextCollect, hrp, 1)
+                                end
+                            end)
+                            task.wait(0.15)
+                        else
+                            -- Keine Token mehr gefunden, beende Loop
+                            collectingTokens = false
+                        end
+                    end
+
+                    -- Nach Token-Sammeln: Falls keine Slimes gefunden, gehe zur Fallback Position
+                    if not TargetSlimeBlob then
                         local fallbackPos = Vector3.new(-47064, 291.907898, -183.909866)
                         local distance = (fallbackPos - HumanoidRootPart.Position).Magnitude
                         if distance > 1 then
