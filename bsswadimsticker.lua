@@ -797,7 +797,21 @@ task.spawn(function()
                             local platTween = TweenService:Create(platform, TweenInfo.new(duration, Enum.EasingStyle.Linear), {CFrame = CFrame.new(collectTarget - Vector3.new(0, 3, 0))})
                             tween:Play()
                             platTween:Play()
+                            local conn
+                            conn = game:GetService("RunService").Heartbeat:Connect(function()
+                                if not Settings.AutoSlimeKill or not tween or game.PlaceId ~= 17579225831 then 
+                                    if conn then conn:Disconnect() end
+                                    return 
+                                end
+                                HumanoidRootPart.AssemblyLinearVelocity = Vector3.zero
+                                HumanoidRootPart.AssemblyAngularVelocity = Vector3.zero
+                                if platform and platform:IsA("BasePart") then
+                                    platform.AssemblyLinearVelocity = Vector3.zero
+                                    platform.AssemblyAngularVelocity = Vector3.zero
+                                end
+                            end)
                             tween.Completed:Wait()
+                            if conn then conn:Disconnect() end
 
                             -- Berühre Token mit firetouchinterest für ~150ms
                             pcall(function()
