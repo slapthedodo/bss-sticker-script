@@ -383,6 +383,13 @@ retroTab:CreateButton({
     end,
 })
 
+retroTab:CreateButton({
+    Name = "tp to retro lobby (atlas bypass)",
+    Callback = function()
+        TeleportService:Teleport(17579226768, LocalPlayer)
+    end,
+})
+
 retroTab:CreateSection("atuo tp")
 
 retroTab:CreateToggle({
@@ -563,7 +570,7 @@ end)
 
 -- Loop 3: Auto Teleport (5s)
 task.spawn(function()
-    while ScriptRunning do
+    while ScriptRunning and game.PlaceId == 17579225831 do
         if Settings.Autoretro then
             TeleportService:Teleport(17579225831, LocalPlayer)
         end
