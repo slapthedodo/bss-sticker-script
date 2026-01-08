@@ -613,7 +613,6 @@ task.spawn(function()
                         end)
                         task.wait(1)
                     end
-                    print("Auto Claim Hive Durchlauf beendet.")
                 else
                     HiveClaimedInretro = false -- Reset falls abgebrochen
                 end
@@ -1040,14 +1039,30 @@ task.spawn(function()
                             {name = "Bee Upgrade 3", cost = 30}
                         }
 
+                        local allButtons = tycoonButtons:GetChildren()
                         for _, upgrade in ipairs(beeUpgrades) do
                             if not Settings.AutoUpgrade then break end
-                            local beeBtnFolder = tycoonButtons:FindFirstChild(upgrade.name)
-                            local beeBtn = beeBtnFolder and beeBtnFolder:FindFirstChild("Button")
-                            if beeBtn then
-                                handleButton(beeBtn, upgrade.cost, upgrade.name, true)
+                            
+                            local foundBtn = nil
+                            for _, child in ipairs(allButtons) do
+                                if child.Name:find("Bee Upgrade") and child:FindFirstChild("Button") then
+                                    -- Check if this specific upgrade name matches or if it's the intended one
+                                    -- Since there are multiple Bee Upgrades, we use a simple match
+                                    if child.Name == upgrade.name then
+                                        foundBtn = child.Button
+                                        break
+                                    end
+                                end
+                            end
+
+                            if foundBtn then
+                                handleButton(foundBtn, upgrade.cost, upgrade.name, true)
                             else
-                                print("[DEBUG] Button not found for:", upgrade.name)
+                                print("[DEBUG] SEARCHING AGAIN for:", upgrade.name)
+                                -- Fallback: iterate and print all names to debug
+                                for _, child in ipairs(allButtons) do
+                                    print("[DEBUG] Tycoon child:", child.Name)
+                                end
                             end
                         end
                     else
