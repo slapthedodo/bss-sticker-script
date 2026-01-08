@@ -34,6 +34,7 @@ local Settings = {
     AutoHit = false,
     AutoSlimeKill = false,
     AutoUpgrade = false,
+    AutoUnlockBees = false,
     InterruptAutoSlime = false
 }
 
@@ -187,6 +188,7 @@ local function LoadConfig()
             if result.AutoHit ~= nil then Settings.AutoHit = result.AutoHit end
             if result.AutoSlimeKill ~= nil then Settings.AutoSlimeKill = result.AutoSlimeKill end
             if result.AutoUpgrade ~= nil then Settings.AutoUpgrade = result.AutoUpgrade end
+            if result.AutoUnlockBees ~= nil then Settings.AutoUnlockBees = result.AutoUnlockBees end
         end
     end
 end
@@ -473,6 +475,16 @@ retroTab:CreateToggle({
     Flag = "AutoUpgrade",
     Callback = function(Value)
         Settings.AutoUpgrade = Value
+        SaveConfig()
+    end,
+})
+
+retroTab:CreateToggle({
+    Name = "Auto Unlock Bees",
+    CurrentValue = Settings.AutoUnlockBees,
+    Flag = "AutoUnlockBees",
+    Callback = function(Value)
+        Settings.AutoUnlockBees = Value
         SaveConfig()
     end,
 })
@@ -1105,6 +1117,26 @@ task.spawn(function()
             end
         else
             isAutoUpgradeRunning = false
+        end
+        task.wait(1)
+    end
+end)
+
+-- Loop 8: AutoUnlockBees
+task.spawn(function()
+    while ScriptRunning do
+        if Settings.AutoUnlockBees and game.PlaceId == 17579225831 then
+            pcall(function()
+                local button = workspace.ClassicMinigame.TycoonButtons:FindFirstChild("Unlock Bees Button")
+                if button and button:FindFirstChild("Button") and button.Button:FindFirstChild("TouchInterest") then
+                    local character = LocalPlayer.Character
+                    if character and character:FindFirstChild("HumanoidRootPart") then
+                        firetouchinterest(button.Button, character.HumanoidRootPart, 0)
+                        task.wait()
+                        firetouchinterest(button.Button, character.HumanoidRootPart, 1)
+                    end
+                end
+            end)
         end
         task.wait(1)
     end
