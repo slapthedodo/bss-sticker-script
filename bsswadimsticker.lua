@@ -470,21 +470,21 @@ retroTab:CreateToggle({
 })
 
 retroTab:CreateToggle({
-    Name = "Auto Upgrade",
-    CurrentValue = Settings.AutoUpgrade,
-    Flag = "AutoUpgrade",
-    Callback = function(Value)
-        Settings.AutoUpgrade = Value
-        SaveConfig()
-    end,
-})
-
-retroTab:CreateToggle({
     Name = "Auto Unlock Bees",
     CurrentValue = Settings.AutoUnlockBees,
     Flag = "AutoUnlockBees",
     Callback = function(Value)
         Settings.AutoUnlockBees = Value
+        SaveConfig()
+    end,
+})
+
+retroTab:CreateToggle({
+    Name = "Auto Upgrade",
+    CurrentValue = Settings.AutoUpgrade,
+    Flag = "AutoUpgrade",
+    Callback = function(Value)
+        Settings.AutoUpgrade = Value
         SaveConfig()
     end,
 })
@@ -1017,6 +1017,25 @@ task.spawn(function()
     end
 end)
 
+-- Loop 8: AutoUnlockBees
+task.spawn(function()
+    while ScriptRunning do
+        if Settings.AutoUnlockBees and game.PlaceId == 17579225831 then
+            pcall(function()
+                local button = workspace.ClassicMinigame.TycoonButtons["Unlock Bees Button"]:FindFirstChild("Button")
+                if button then
+                    local touchInterest = button:FindFirstChildOfClass("TouchInterest")
+                    if touchInterest and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                        firetouchinterest(button, LocalPlayer.Character.HumanoidRootPart, 0)
+                        firetouchinterest(button, LocalPlayer.Character.HumanoidRootPart, 1)
+                    end
+                end
+            end)
+        end
+        task.wait(1)
+    end
+end)
+
 -- Loop 7: AutoUpgrade
 task.spawn(function()
     local TweenService = game:GetService("TweenService")
@@ -1117,26 +1136,6 @@ task.spawn(function()
             end
         else
             isAutoUpgradeRunning = false
-        end
-        task.wait(1)
-    end
-end)
-
--- Loop 8: AutoUnlockBees
-task.spawn(function()
-    while ScriptRunning do
-        if Settings.AutoUnlockBees and game.PlaceId == 17579225831 then
-            pcall(function()
-                local button = workspace.ClassicMinigame.TycoonButtons:FindFirstChild("Unlock Bees Button")
-                if button and button:FindFirstChild("Button") and button.Button:FindFirstChild("TouchInterest") then
-                    local character = LocalPlayer.Character
-                    if character and character:FindFirstChild("HumanoidRootPart") then
-                        firetouchinterest(button.Button, character.HumanoidRootPart, 0)
-                        task.wait()
-                        firetouchinterest(button.Button, character.HumanoidRootPart, 1)
-                    end
-                end
-            end)
         end
         task.wait(1)
     end
