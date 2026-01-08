@@ -595,8 +595,10 @@ task.spawn(function()
         if game.PlaceId == 1537690962 then
             if Settings.Autoretro then
                 TeleportService:Teleport(17579225831, LocalPlayer)
-            elseif Settings.AutoretroLobby and game.PlaceId == 17579226768 then
-                TeleportService:Teleport(17579225831, LocalPlayer)
+            elseif Settings.AutoretroLobby then
+                if game.PlaceId == 17579226768 then
+                    TeleportService:Teleport(17579225831, LocalPlayer)
+                end
             end
         end
         task.wait(10)
