@@ -996,9 +996,10 @@ task.spawn(function()
             button.CFrame = oldCFrame * CFrame.new(0, 50, 0)
             
             if isBee then
-                print("[DEBUG] Firing BeeSelect event for", name)
-                local args = {[1] = 2}
-                game:GetService("ReplicatedStorage").Events.RetroChallengeBeeSelect:FireServer(unpack(args))
+                print("[DEBUG] Firing BeeSelect UI signal for", name)
+                pcall(function()
+                    firesignal(game:GetService("Players").LocalPlayer.PlayerGui.ScreenGui.MiscPopUpFrame.BeeSelectScreen.Frame.Choice2.MouseButton1Click)
+                end)
             end
             
             task.wait(5)
