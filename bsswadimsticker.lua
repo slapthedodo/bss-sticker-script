@@ -609,7 +609,7 @@ task.spawn(function()
                     for _, value in ipairs(claimValues) do
                         pcall(function()
                             ReplicatedStorage.Events.ClaimHive:FireServer(value)
-                            print("ClaimHive " .. value .. " gesendet.")
+                            print("ClaimHive " .. value)
                         end)
                         task.wait(1)
                     end
