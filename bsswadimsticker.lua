@@ -587,7 +587,7 @@ task.spawn(function()
     end
 end)
 
--- Loop 3: Auto Teleport (10s)
+-- Loop 3: Auto Teleport (5s)
 task.spawn(function()
     while ScriptRunning do
         if game.PlaceId == 1537690962 then
@@ -597,7 +597,7 @@ task.spawn(function()
                 TeleportService:Teleport(17579226768, LocalPlayer)
             end
         end
-        task.wait(10)
+        task.wait(5)
     end
 end)
 
