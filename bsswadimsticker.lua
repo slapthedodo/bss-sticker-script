@@ -1,4 +1,3 @@
-firesignal(game:GetService("Players").LocalPlayer.PlayerGui.ScreenGui.RewardsPopUp.NoButton.MouseButton1Click)
 
 
 -- Dienste
@@ -675,6 +674,8 @@ end)
 
 -- Loop 6: AutoHit (0.1s)
 task.spawn(function()
+    wait(1)
+    firesignal(game:GetService("Players").LocalPlayer.PlayerGui.ScreenGui.RewardsPopUp.NoButton.MouseButton1Click)
     while ScriptRunning do
         if Settings.AutoHit and game.PlaceId == 17579225831 then
             pcall(function()
