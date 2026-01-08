@@ -962,17 +962,52 @@ end)
 
 -- Loop 7: AutoUpgrade
 task.spawn(function()
-    local TweenService = game:GetService("TweenService")
     local isAutoUpgradeRunning = false
+
+    local function getBricks()
+        local brickLabel = LocalPlayer.PlayerGui:FindFirstChild("ScreenGui")
+            and LocalPlayer.PlayerGui.ScreenGui:FindFirstChild("UnderPopUpFrame")
+            and LocalPlayer.PlayerGui.ScreenGui.UnderPopUpFrame:FindFirstChild("RetroGuiTopMenu")
+            and LocalPlayer.PlayerGui.ScreenGui.UnderPopUpFrame.RetroGuiTopMenu:FindFirstChild("TopMenuFrame2")
+            and LocalPlayer.PlayerGui.ScreenGui.UnderPopUpFrame.RetroGuiTopMenu.TopMenuFrame2:FindFirstChild("BrickLabel")
+        if brickLabel then
+            return tonumber(brickLabel.Text) or 0
+        end
+        return 0
+    end
+
+    local function handleButton(button, cost, isBee)
+        local character = LocalPlayer.Character
+        if not character or not character:FindFirstChild("HumanoidRootPart") then return false end
+        local hrp = character.HumanoidRootPart
+
+        if getBricks() >= cost then
+            local oldCFrame = button.CFrame
+            button.CanCollide = false
+            button.CFrame = hrp.CFrame
+            task.wait(0.5)
+            button.CFrame = oldCFrame * CFrame.new(0, 50, 0)
+            
+            if isBee then
+                local args = {[1] = 2}
+                game:GetService("ReplicatedStorage").Events.RetroChallengeBeeSelect:FireServer(unpack(args))
+            end
+            
+            task.wait(5)
+            return true
+        else
+            button.CanCollide = false
+            button.CFrame = hrp.CFrame * CFrame.new(0, 40, 0)
+            return false
+        end
+    end
 
     while ScriptRunning do
         if Settings.AutoUpgrade and game.PlaceId == 17579225831 then
             if not isAutoUpgradeRunning then
                 isAutoUpgradeRunning = true
 
-                -- Warte 15 Sekunden am Anfang
                 task.wait(15)
-                -- Pause AutoSlimeKill while upgrading (save previous state)
                 local prevAutoSlime = Settings.AutoSlimeKill
                 if prevAutoSlime then
                     Settings.AutoSlimeKill = false
@@ -980,131 +1015,32 @@ task.spawn(function()
                     cancelActiveAutoSlime()
                 end
 
-
-                
-                
-                local BRICK_COST_SWORD = 10
-                local BRICK_COST_BEE1 = 5
-                local BRICK_COST_BEE2 = 15
-                local BRICK_COST_BEE3 = 30
-
-                -- Helper function to get current brick count
-                local function GetBricks()
-                    local bricks = 0
-                    pcall(function()
-                        local brickLabel = game:GetService("Players").LocalPlayer.PlayerGui.ScreenGui.UnderPopUpFrame.RetroGuiTopMenu.TopMenuFrame2.BrickLabel
-                        if brickLabel then
-                            bricks = tonumber(brickLabel.Text) or 0
+                pcall(function()
+                    local tycoonButtons = workspace:FindFirstChild("ClassicMinigame") and workspace.ClassicMinigame:FindFirstChild("TycoonButtons")
+                    if tycoonButtons then
+                        -- 1. Sword
+                        local swordBtn = tycoonButtons:FindFirstChild("Buy Classic Sword") and tycoonButtons["Buy Classic Sword"]:FindFirstChild("Button")
+                        if swordBtn then
+                            handleButton(swordBtn, 10, false)
                         end
-                    end)
-                    return bricks
-                end
 
-                -- Helper function to move button and set CanCollide
-                local function AdjustButton(button, character, canAfford)
-                    if not button or not character or not character:FindFirstChild("HumanoidRootPart") then return end
-                    local hrp = character.HumanoidRootPart
-                    if canAfford then
-                        -- Temporarily move into character
-                        local originalCFrame = button.CFrame
-                        button.CanCollide = false
-                        button.CFrame = hrp.CFrame
-                        task.wait(0.5) -- GANZ KURZ
-                        button.CFrame = originalCFrame * CFrame.new(0, 50, 0) -- Move back up
-                        button.CanCollide = true -- Restore original CanCollide after moving
-                    else
-                        -- Move 40 studs higher than character and disable collision
-                        button.CanCollide = false
-                        button.CFrame = hrp.CFrame * CFrame.new(0, 40, 0)
-                    end
-                end
+                        -- 2. Bee Upgrades
+                        local beeUpgrades = {
+                            {name = "Bee Upgrade 1", cost = 5},
+                            {name = "Bee Upgrade 2", cost = 15},
+                            {name = "Bee Upgrade 3", cost = 30}
+                        }
 
-                -- SWORD PURCHASE LOGIC
-                local classicSwordButton = workspace.ClassicMinigame.TycoonButtons["Buy Classic Sword"].Button
-                if classicSwordButton and Settings.AutoUpgrade and game.PlaceId == 17579225831 then
-                    local character = LocalPlayer.Character
-                    if character and character:FindFirstChild("HumanoidRootPart") then
-                        local currentBricks = GetBricks()
-                        if currentBricks >= BRICK_COST_SWORD then
-                            print("Attempting to buy Classic Sword...")
-                            AdjustButton(classicSwordButton, character, true) -- Teleport and move up
-                            task.wait(5) -- 5 seconds delay after purchase
-                        else
-                            print("Not enough bricks for Classic Sword. Moving button.")
-                            AdjustButton(classicSwordButton, character, false) -- Move up
-                        end
-                    end
-                end
-                
-                local upgrades = {
-                    {name = "Bee Upgrade 1", cost = BRICK_COST_BEE1, buttonPath = "workspace.ClassicMinigame.TycoonButtons["Bee Upgrade 1"].Button"},
-                    {name = "Bee Upgrade 2", cost = BRICK_COST_BEE2, buttonPath = "workspace.ClassicMinigame.TycoonButtons["Bee Upgrade 2"].Button"},
-                    {name = "Bee Upgrade 3", cost = BRICK_COST_BEE3, buttonPath = "workspace.ClassicMinigame.TycoonButtons["Bee Upgrade 3"].Button"}
-                }
-                
-                for upgradeIdx, upgrade in ipairs(upgrades) do
-                    if not Settings.AutoUpgrade or game.PlaceId ~= 17579225831 then break end
-                    
-                    local character = LocalPlayer.Character
-                    if not character or not character:FindFirstChild("HumanoidRootPart") then break end
-                    local hrp = character.HumanoidRootPart
-                    
-                    -- Warte auf genug Bricks (check BrickLabel)
-                    local hasEnoughBricks = false
-                    local maxWait = 300
-                    local waitedTime = 0
-                    while not hasEnoughBricks and Settings.AutoUpgrade and game.PlaceId == 17579225831 and waitedTime < maxWait do
-                        pcall(function()
-                            local brickLabel = game:GetService("Players").LocalPlayer.PlayerGui.ScreenGui.UnderPopUpFrame.RetroGuiTopMenu.TopMenuFrame2.BrickLabel
-                            if brickLabel then
-                                local brickText = tonumber(brickLabel.Text) or 0
-                                if brickText >= upgrade.cost then
-                                    hasEnoughBricks = true
-                                end
+                        for _, upgrade in ipairs(beeUpgrades) do
+                            if not Settings.AutoUpgrade then break end
+                            local beeBtn = tycoonButtons:FindFirstChild(upgrade.name) and tycoonButtons[upgrade.name]:FindFirstChild("Button")
+                            if beeBtn then
+                                handleButton(beeBtn, upgrade.cost, true)
                             end
-                        end)
-                        if not hasEnoughBricks then
-                            task.wait(0.5)
-                            waitedTime = waitedTime + 0.5
                         end
                     end
-                    
-                    if not hasEnoughBricks then break end
-                    
-                    -- Tween zu Position kurz vor Upgrade Button ("-47180, 290, 222")
-                    local approachPos = Vector3.new(-47180, 290, 222)
-                    local dist1 = (approachPos - hrp.Position).Magnitude
-                    if dist1 > 1 then
-                        local duration1 = dist1 / 69
-                        local tween1 = TweenService:Create(hrp, TweenInfo.new(duration1, Enum.EasingStyle.Linear), {CFrame = CFrame.new(approachPos)})
-                        tween1:Play()
-                        tween1.Completed:Wait()
-                    end
-                    
-                    -- Warte vor dem Button, falls nötig (Cooldown von vorherigem Upgrade)
-                    if upgrade.waitBefore > 0 then
-                        task.wait(upgrade.waitBefore)
-                    end
-                    
-                    -- Tween zum Upgrade Button ("-47190, 290, 222")
-                    local buttonPos = upgrade.position
-                    local dist2 = (buttonPos - hrp.Position).Magnitude
-                    if dist2 > 1 then
-                        local duration2 = dist2 / 69
-                        local tween2 = TweenService:Create(hrp, TweenInfo.new(duration2, Enum.EasingStyle.Linear), {CFrame = CFrame.new(buttonPos)})
-                        tween2:Play()
-                        tween2.Completed:Wait()
-                    end
-                    
-                    -- 1 Sekunde nach Ankunft: FireServer RetroChallengeBeeSelect mit arg 2
-                    task.wait(1)
-                    pcall(function()
-                        local args = {[1] = 2}
-                        game:GetService("ReplicatedStorage").Events.RetroChallengeBeeSelect:FireServer(unpack(args))
-                    end)
-                end
-                
-                -- Restore AutoSlimeKill to previous value
+                end)
+
                 if prevAutoSlime ~= nil then
                     Settings.AutoSlimeKill = prevAutoSlime
                     SaveConfig()
