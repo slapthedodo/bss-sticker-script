@@ -42,7 +42,6 @@ local AutoSlime_activeTween = nil
 local AutoSlime_activePlatTween = nil
 local AutoSlime_activeConn = nil
 local AutoSlime_blockUntil = 0
-local AutoSlime_platform = nil
 
 -- Helper to cancel any active AutoSlime tweens/connections
 local function cancelActiveAutoSlime()
@@ -51,26 +50,8 @@ local function cancelActiveAutoSlime()
         if AutoSlime_activeConn then AutoSlime_activeConn:Disconnect() AutoSlime_activeConn = nil end
         if AutoSlime_activeTween then pcall(function() AutoSlime_activeTween:Cancel() end) AutoSlime_activeTween = nil end
         if AutoSlime_activePlatTween then pcall(function() AutoSlime_activePlatTween:Cancel() end) AutoSlime_activePlatTween = nil end
-        -- destroy platform if present
-        if AutoSlime_platform and AutoSlime_platform.Parent then
-            pcall(function()
-                AutoSlime_platform:Destroy()
-            end)
-        end
-        AutoSlime_platform = nil
-        -- restore character physics
-        pcall(function()
-            local char = LocalPlayer.Character
-            if char and char:FindFirstChild("Humanoid") then
-                char.Humanoid.PlatformStand = false
-            end
-            if char and char:FindFirstChild("HumanoidRootPart") then
-                char.HumanoidRootPart.AssemblyLinearVelocity = Vector3.zero
-                char.HumanoidRootPart.AssemblyAngularVelocity = Vector3.zero
-            end
-        end)
         -- set a short block to prevent immediate restart
-        AutoSlime_blockUntil = tick() + 1.0
+        AutoSlime_blockUntil = tick() + 0.8
     end)
 end
 
@@ -754,7 +735,6 @@ task.spawn(function()
                     platform.CanCollide = true
                     platform.Name = "SlimeKillPlatform"
                     platform.Parent = workspace
-                    AutoSlime_platform = platform
                 end
 
                 -- Character hinlegen und nach oben schauen lassen
@@ -998,13 +978,12 @@ task.spawn(function()
                 end
             end
         else
-                if lastToggleState then
+            if lastToggleState then
                 lastToggleState = false
                 collectingTokensNow = false
                 -- Cancel any active tweens/handlers
                 cancelActiveAutoSlime()
                 if platform then platform:Destroy() platform = nil end
-                AutoSlime_platform = nil
                 -- ClassicBaseplate Collision wieder anschalten
                 pcall(function()
                     local classicBaseplate = workspace.ClassicMinigame.ClassicBaseplate
@@ -1174,9 +1153,6 @@ task.spawn(function()
                             task.wait(0.5)
                         end
                     end)
-
-                    -- kurz warten, damit die Server-Änderung der Bricks reflektiert wird
-                    task.wait(1)
                 end
                 
                 -- Restore AutoSlimeKill to previous value
