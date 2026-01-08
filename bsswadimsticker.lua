@@ -28,13 +28,11 @@ local Settings = {
     YellowCannon = false,
     ShowCooldowns = true,
     Autoretro = false,
-    AutoretroLobby = false,
     retroWalkspeed = false,
     AutoClaimHive = false,
     AutoHit = false,
     AutoSlimeKill = false,
     AutoUpgrade = false,
-    AutoUnlockBees = false,
     InterruptAutoSlime = false
 }
 
@@ -182,13 +180,11 @@ local function LoadConfig()
             if result.YellowCannon ~= nil then Settings.YellowCannon = result.YellowCannon end
             if result.ShowCooldowns ~= nil then Settings.ShowCooldowns = result.ShowCooldowns end
             if result.Autoretro ~= nil then Settings.Autoretro = result.Autoretro end
-            if result.AutoretroLobby ~= nil then Settings.AutoretroLobby = result.AutoretroLobby end
             if result.retroWalkspeed ~= nil then Settings.retroWalkspeed = result.retroWalkspeed end
             if result.AutoClaimHive ~= nil then Settings.AutoClaimHive = result.AutoClaimHive end
             if result.AutoHit ~= nil then Settings.AutoHit = result.AutoHit end
             if result.AutoSlimeKill ~= nil then Settings.AutoSlimeKill = result.AutoSlimeKill end
             if result.AutoUpgrade ~= nil then Settings.AutoUpgrade = result.AutoUpgrade end
-            if result.AutoUnlockBees ~= nil then Settings.AutoUnlockBees = result.AutoUnlockBees end
         end
     end
 end
@@ -387,13 +383,6 @@ retroTab:CreateButton({
     end,
 })
 
-retroTab:CreateButton({
-    Name = "tp to retro lobby (atlas bypass)",
-    Callback = function()
-        TeleportService:Teleport(17579226768, LocalPlayer)
-    end,
-})
-
 retroTab:CreateSection("atuo tp")
 
 retroTab:CreateToggle({
@@ -402,23 +391,6 @@ retroTab:CreateToggle({
     Flag = "Autoretro",
     Callback = function(Value)
         Settings.Autoretro = Value
-        if Value then
-            Settings.AutoretroLobby = false
-            -- Hier könnte man das UI-Element für AutoretroLobby updaten, falls Rayfield das unterstützt
-        end
-        SaveConfig()
-    end,
-})
-
-retroTab:CreateToggle({
-    Name = "auto teleport retro lobby",
-    CurrentValue = Settings.AutoretroLobby,
-    Flag = "AutoretroLobby",
-    Callback = function(Value)
-        Settings.AutoretroLobby = Value
-        if Value then
-            Settings.Autoretro = false
-        end
         SaveConfig()
     end,
 })
@@ -465,16 +437,6 @@ retroTab:CreateToggle({
     Flag = "AutoSlimeKill",
     Callback = function(Value)
         Settings.AutoSlimeKill = Value
-        SaveConfig()
-    end,
-})
-
-retroTab:CreateToggle({
-    Name = "Auto Unlock Bees",
-    CurrentValue = Settings.AutoUnlockBees,
-    Flag = "AutoUnlockBees",
-    Callback = function(Value)
-        Settings.AutoUnlockBees = Value
         SaveConfig()
     end,
 })
@@ -602,12 +564,8 @@ end)
 -- Loop 3: Auto Teleport (5s)
 task.spawn(function()
     while ScriptRunning do
-        if game.PlaceId == 1537690962 then
-            if Settings.Autoretro then
-                TeleportService:Teleport(17579225831, LocalPlayer)
-            elseif Settings.AutoretroLobby then
-                TeleportService:Teleport(17579226768, LocalPlayer)
-            end
+        if Settings.Autoretro then
+            TeleportService:Teleport(17579225831, LocalPlayer)
         end
         task.wait(5)
     end
@@ -1014,25 +972,6 @@ task.spawn(function()
             end
         end
         task.wait(0.1)
-    end
-end)
-
--- Loop 8: AutoUnlockBees
-task.spawn(function()
-    while ScriptRunning do
-        if Settings.AutoUnlockBees and game.PlaceId == 17579225831 then
-            pcall(function()
-                local button = workspace.ClassicMinigame.TycoonButtons["Unlock Bees Button"]:FindFirstChild("Button")
-                if button then
-                    local touchInterest = button:FindFirstChildOfClass("TouchInterest")
-                    if touchInterest and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                        firetouchinterest(button, LocalPlayer.Character.HumanoidRootPart, 0)
-                        firetouchinterest(button, LocalPlayer.Character.HumanoidRootPart, 1)
-                    end
-                end
-            end)
-        end
-        task.wait(1)
     end
 end)
 
