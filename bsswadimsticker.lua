@@ -570,7 +570,7 @@ end)
 
 -- Loop 3: Auto Teleport (5s)
 task.spawn(function()
-    while ScriptRunning and game.PlaceId == 17579225831 do
+    while ScriptRunning and game.PlaceId ~= 17579225831 do
         if Settings.Autoretro then
             TeleportService:Teleport(17579225831, LocalPlayer)
         end
