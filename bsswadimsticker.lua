@@ -971,17 +971,25 @@ task.spawn(function()
             and LocalPlayer.PlayerGui.ScreenGui.UnderPopUpFrame.RetroGuiTopMenu:FindFirstChild("TopMenuFrame2")
             and LocalPlayer.PlayerGui.ScreenGui.UnderPopUpFrame.RetroGuiTopMenu.TopMenuFrame2:FindFirstChild("BrickLabel")
         if brickLabel then
-            return tonumber(brickLabel.Text) or 0
+            local val = tonumber(brickLabel.Text) or 0
+            print("[DEBUG] Current bricks:", val)
+            return val
         end
+        print("[DEBUG] BrickLabel not found!")
         return 0
     end
 
-    local function handleButton(button, cost, isBee)
+    local function handleButton(button, cost, name, isBee)
         local character = LocalPlayer.Character
-        if not character or not character:FindFirstChild("HumanoidRootPart") then return false end
+        if not character or not character:FindFirstChild("HumanoidRootPart") then 
+            print("[DEBUG] Character or HRP missing for", name)
+            return false 
+        end
         local hrp = character.HumanoidRootPart
+        local bricks = getBricks()
 
-        if getBricks() >= cost then
+        if bricks >= cost then
+            print("[DEBUG] Buying", name, "for", cost)
             local oldCFrame = button.CFrame
             button.CanCollide = false
             button.CFrame = hrp.CFrame
@@ -989,6 +997,7 @@ task.spawn(function()
             button.CFrame = oldCFrame * CFrame.new(0, 50, 0)
             
             if isBee then
+                print("[DEBUG] Firing BeeSelect event for", name)
                 local args = {[1] = 2}
                 game:GetService("ReplicatedStorage").Events.RetroChallengeBeeSelect:FireServer(unpack(args))
             end
@@ -996,8 +1005,9 @@ task.spawn(function()
             task.wait(5)
             return true
         else
+            print("[DEBUG] Cannot afford", name, "| Cost:", cost, "| Have:", bricks)
             button.CanCollide = false
-            button.CFrame = hrp.CFrame * CFrame.new(0, 40, 0)
+            button.CFrame = hrp.CFrame * CFrame.new(0, 20, 0)
             return false
         end
     end
@@ -1008,20 +1018,19 @@ task.spawn(function()
                 isAutoUpgradeRunning = true
 
                 task.wait(15)
-                local prevAutoSlime = Settings.AutoSlimeKill
-                if prevAutoSlime then
-                    Settings.AutoSlimeKill = false
-                    SaveConfig()
-                    cancelActiveAutoSlime()
-                end
+                
+                print("[DEBUG] Starting AutoUpgrade cycle")
 
                 pcall(function()
                     local tycoonButtons = workspace:FindFirstChild("ClassicMinigame") and workspace.ClassicMinigame:FindFirstChild("TycoonButtons")
                     if tycoonButtons then
                         -- 1. Sword
-                        local swordBtn = tycoonButtons:FindFirstChild("Buy Classic Sword") and tycoonButtons["Buy Classic Sword"]:FindFirstChild("Button")
+                        local swordBtnFolder = tycoonButtons:FindFirstChild("Buy Classic Sword")
+                        local swordBtn = swordBtnFolder and swordBtnFolder:FindFirstChild("Button")
                         if swordBtn then
-                            handleButton(swordBtn, 10, false)
+                            handleButton(swordBtn, 10, "Classic Sword", false)
+                        else
+                            print("[DEBUG] Sword button not found!")
                         end
 
                         -- 2. Bee Upgrades
@@ -1033,19 +1042,20 @@ task.spawn(function()
 
                         for _, upgrade in ipairs(beeUpgrades) do
                             if not Settings.AutoUpgrade then break end
-                            local beeBtn = tycoonButtons:FindFirstChild(upgrade.name) and tycoonButtons[upgrade.name]:FindFirstChild("Button")
+                            local beeBtnFolder = tycoonButtons:FindFirstChild(upgrade.name)
+                            local beeBtn = beeBtnFolder and beeBtnFolder:FindFirstChild("Button")
                             if beeBtn then
-                                handleButton(beeBtn, upgrade.cost, true)
+                                handleButton(beeBtn, upgrade.cost, upgrade.name, true)
+                            else
+                                print("[DEBUG] Button not found for:", upgrade.name)
                             end
                         end
+                    else
+                        print("[DEBUG] TycoonButtons folder not found!")
                     end
                 end)
 
-                if prevAutoSlime ~= nil then
-                    Settings.AutoSlimeKill = prevAutoSlime
-                    SaveConfig()
-                end
-
+                print("[DEBUG] AutoUpgrade cycle finished")
                 isAutoUpgradeRunning = false
             end
         else
