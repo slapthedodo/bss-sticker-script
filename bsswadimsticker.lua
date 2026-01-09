@@ -50,7 +50,7 @@ local function cancelActiveAutoSlime()
         if AutoSlime_activeTween then pcall(function() AutoSlime_activeTween:Cancel() end) AutoSlime_activeTween = nil end
         if AutoSlime_activePlatTween then pcall(function() AutoSlime_activePlatTween:Cancel() end) AutoSlime_activePlatTween = nil end
         -- set a short block to prevent immediate restart
-        AutoSlime_blockUntil = tick() + 0.8
+        AutoSlime_blockUntil = tick() + 0.2
     end)
 end
 
