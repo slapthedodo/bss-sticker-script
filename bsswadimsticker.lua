@@ -165,7 +165,7 @@ local function SaveConfig()
     local success, err = pcall(function()
         local json = HttpService:JSONEncode(Settings)
         writefile(FileName, json)
-    end)a
+    end)
 end
 
 local function LoadConfig()
