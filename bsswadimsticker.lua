@@ -744,6 +744,7 @@ task.spawn(function()
                 lastToggleState = true
                 collectingTokensNow = false
                 isSquareFarming = false
+                IsWeaponEquipped = true -- Reset state when toggle turned on
                 -- ClassicBaseplate Collision ausschalten
                 pcall(function()
                     local classicBaseplate = workspace.ClassicMinigame.ClassicBaseplate
@@ -985,7 +986,23 @@ task.spawn(function()
                                         end
                                     end
                                 end
-                                if foundSlime or not Settings.AutoSlimeKill or not Settings.FarmPollen or CurrentRound > 6 then break end
+                                
+                                -- Check for tokens too as they also break square farming
+                                local foundToken = false
+                                if not foundSlime and workspace:FindFirstChild("Collectibles") then
+                                    for _, c in pairs(workspace.Collectibles:GetChildren()) do
+                                        if c and c.Name == "C" then
+                                            foundToken = true
+                                            break
+                                        end
+                                    end
+                                end
+
+                                if foundSlime or foundToken or not Settings.AutoSlimeKill or not Settings.FarmPollen or CurrentRound > 6 then 
+                                    isSquareFarming = false
+                                    equipWeapon(true) -- Immediately switch back if interrupted
+                                    break 
+                                end
 
                                 local dist = (targetPos - HumanoidRootPart.Position).Magnitude
                                 local speed = 69
@@ -1020,7 +1037,7 @@ task.spawn(function()
                                     AutoSlime_activeTween = nil
                                     AutoSlime_activePlatTween = nil
                                     
-                                    if firstCoord then
+                                    if firstCoord and Settings.FarmPollen then -- Check toggle again before sprinkler
                                         -- Place Sprinkler at the first coordinate
                                         pcall(function()
                                             local args = {[1] = {["Name"] = "Sprinkler Builder"}}
@@ -1419,7 +1436,7 @@ task.spawn(function()
     end
 end)
 
--- Loop 8: AutoBuyBricks (15s)
+-- Loop 8: AutoBuyBricks (8s)
 task.spawn(function()
     while ScriptRunning do
         if Settings.AutoBuyBricks and game.PlaceId == 17579225831 then
@@ -1438,7 +1455,7 @@ task.spawn(function()
                     end
                 end
             end)
-            task.wait(15)
+            task.wait(8)
         else
             task.wait(1)
         end
