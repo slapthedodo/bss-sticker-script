@@ -641,15 +641,53 @@ task.spawn(function()
 end)
 
 -- Loop 6: AutoHit (0.1s)
+-- Helper: detect if the script UI is currently visible. We attempt multiple
+-- safe checks (Rayfield API methods/flags or a ScreenGui with the window name).
+local function IsScriptUIVisible()
+    local ok, res = pcall(function()
+        if type(Rayfield) == "table" then
+            if Rayfield.GetVisibility then
+                return Rayfield:GetVisibility()
+            end
+            if Rayfield.IsVisible ~= nil then
+                return Rayfield.IsVisible
+            end
+            if Rayfield.Visible ~= nil then
+                return Rayfield.Visible
+            end
+        end
+        if type(Window) == "table" and Window.Visible ~= nil then
+            return Window.Visible
+        end
+
+        local pg = LocalPlayer and LocalPlayer:FindFirstChild("PlayerGui")
+        if pg then
+            local guiName = "bss schlip schlop benutzer schnittstelle"
+            local g = pg:FindFirstChild(guiName) or pg:FindFirstChild("Rayfield") or pg:FindFirstChild("RayfieldGui")
+            if g and g.Enabled ~= nil then
+                return g.Enabled
+            end
+        end
+
+        return false
+    end)
+    if ok and res then
+        return true
+    end
+    return false
+end
+
 task.spawn(function()
     while ScriptRunning do
-        if Settings.AutoHit and game.PlaceId == 17579225831 then
-            pcall(function()
-                VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 0)
-                VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 0)
-            end)
-        end
-        task.wait(0.1)
+            if Settings.AutoHit and game.PlaceId == 17579225831 then
+                if not IsScriptUIVisible() then
+                    pcall(function()
+                        VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 0)
+                        VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 0)
+                    end)
+                end
+            end
+            task.wait(0.03)
     end
 end)
 
@@ -1080,8 +1118,8 @@ task.spawn(function()
                     end
                 end)
 
-                -- After completing the cycle, we set Settings.AutoUpgrade to false to prevent restart
-                Settings.AutoUpgrade = false
+                -- After completing the cycle, keep Settings.AutoUpgrade as-is so it doesn't
+                -- automatically turn off (user can toggle it manually).
                 SaveConfig()
                 isAutoUpgradeRunning = false
             end
