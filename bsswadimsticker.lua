@@ -198,6 +198,22 @@ end
 -- Config laden
 LoadConfig()
 
+-- Laufend die aktuelle Brick-Anzahl pollen (keine Logs)
+local CurrentBricks = 0
+task.spawn(function()
+    while ScriptRunning do
+        pcall(function()
+            local screenGui = LocalPlayer.PlayerGui:FindFirstChild("ScreenGui")
+            local brickLabel = screenGui and screenGui:FindFirstChild("UnderPopUpFrame")
+                and screenGui.UnderPopUpFrame:FindFirstChild("RetroGuiTopMenu")
+                and screenGui.UnderPopUpFrame.RetroGuiTopMenu:FindFirstChild("TopMenuFrame2")
+                and screenGui.UnderPopUpFrame.RetroGuiTopMenu.TopMenuFrame2:FindFirstChild("BrickLabel")
+            CurrentBricks = tonumber(brickLabel and brickLabel.Text) or 0
+        end)
+        task.wait(1)
+    end
+end)
+
 -- Funktion zum Setzen des Walkspeeds
 local function SetWalkspeed(speed)
     local Character = LocalPlayer.Character
@@ -1008,26 +1024,25 @@ task.spawn(function()
     local isAutoUpgradeRunning = false
 
     local function getBricks()
-        local brickLabel = LocalPlayer.PlayerGui:FindFirstChild("ScreenGui")
-            and LocalPlayer.PlayerGui.ScreenGui:FindFirstChild("UnderPopUpFrame")
-            and LocalPlayer.PlayerGui.ScreenGui.UnderPopUpFrame:FindFirstChild("RetroGuiTopMenu")
-            and LocalPlayer.PlayerGui.ScreenGui.UnderPopUpFrame.RetroGuiTopMenu:FindFirstChild("TopMenuFrame2")
-            and LocalPlayer.PlayerGui.ScreenGui.UnderPopUpFrame.RetroGuiTopMenu.TopMenuFrame2:FindFirstChild("BrickLabel")
-        if brickLabel then
-            local val = tonumber(brickLabel.Text) or 0
-            print("bricks:", val)
-            return val
-        end
-        return 0
+        return CurrentBricks
     end
 
-    local function handleButton(button, cost, name, isBee)
+    local function handleButton(button, cost, name, isBee, maxWait)
         local character = LocalPlayer.Character
         if not character or not character:FindFirstChild("HumanoidRootPart") then 
             return false 
         end
         local hrp = character.HumanoidRootPart
         local bricks = getBricks()
+
+        if maxWait and maxWait > 0 then
+            local waited = 0
+            while bricks < cost and waited < maxWait and Settings.AutoUpgrade and ScriptRunning do
+                task.wait(1)
+                waited = waited + 1
+                bricks = getBricks()
+            end
+        end
 
         if bricks >= cost then
             local oldCFrame = button.CFrame
@@ -1116,7 +1131,8 @@ task.spawn(function()
                         local firebrandBtnFolder = tycoonButtons:FindFirstChild("Buy Firebrand")
                         local firebrandBtn = firebrandBtnFolder and firebrandBtnFolder:FindFirstChild("Button")
                         if firebrandBtn then
-                            local bought = handleButton(firebrandBtn, 300, "Firebrand", false)
+                            -- Warte bis genug Bricks für Firebrand vorhanden sind (Timeout 120s)
+                            local bought = handleButton(firebrandBtn, 300, "Firebrand", false, 1200)
                             if not bought then
                                 isAutoUpgradeRunning = false
                                 return
