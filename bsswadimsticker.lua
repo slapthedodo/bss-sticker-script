@@ -516,7 +516,7 @@ retroTab:CreateToggle({
 })
 
 retroTab:CreateToggle({
-    Name = "farm pollen (r1-6)",
+    Name = "farm pollen (r0-6)",
     CurrentValue = Settings.FarmPollen,
     Flag = "FarmPollen",
     Callback = function(Value)
@@ -936,8 +936,8 @@ task.spawn(function()
 
                     -- Nach Token-Sammeln: Falls keine Slimes gefunden, gehe zur Fallback Position
                     if not TargetSlimeBlob then
-                        if Settings.FarmPollen and CurrentRound > 0 and CurrentRound <= 6 then
-                            -- Farm Pollen Logic for Rounds 1-6
+                        if Settings.FarmPollen and CurrentRound >= 0 and CurrentRound <= 6 then
+                            -- Farm Pollen Logic for Rounds 0-6
                             local farmCoords = {
                                 Vector3.new(-47014, 292, 64),
                                 Vector3.new(-46987, 292, 64),
