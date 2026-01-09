@@ -972,7 +972,6 @@ task.spawn(function()
             print("bricks:", val)
             return val
         end
-        print("[DEBUG] BrickLabel not found!")
         return 0
     end
 
