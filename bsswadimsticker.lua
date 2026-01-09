@@ -35,7 +35,8 @@ local Settings = {
     AutoSlimeKill = false,
     AutoUpgrade = false,
     AutoBuyBricks = false,
-    InterruptAutoSlime = false
+    InterruptAutoSlime = false,
+    FarmPollen = false
 }
 
 -- Active tween handles for AutoSlimeKill (accessible globally so UI can interrupt)
@@ -191,6 +192,7 @@ local function LoadConfig()
             if result.AutoSlimeKill ~= nil then Settings.AutoSlimeKill = result.AutoSlimeKill end
             if result.AutoUpgrade ~= nil then Settings.AutoUpgrade = result.AutoUpgrade end
             if result.AutoBuyBricks ~= nil then Settings.AutoBuyBricks = result.AutoBuyBricks end
+            if result.FarmPollen ~= nil then Settings.FarmPollen = result.FarmPollen end
         end
     end
 end
@@ -200,6 +202,7 @@ LoadConfig()
 
 -- Laufend die aktuelle Brick-Anzahl pollen (keine Logs)
 local CurrentBricks = 0
+local CurrentRound = 0
 task.spawn(function()
     while ScriptRunning do
         pcall(function()
@@ -211,6 +214,28 @@ task.spawn(function()
             CurrentBricks = tonumber(brickLabel and brickLabel.Text) or 0
         end)
         task.wait(1)
+    end
+end)
+
+-- Poll current round for FarmPollen
+task.spawn(function()
+    while ScriptRunning do
+        pcall(function()
+            local screenGui = LocalPlayer.PlayerGui:FindFirstChild("ScreenGui")
+            local roundLabel = screenGui and screenGui:FindFirstChild("UnderPopUpFrame")
+                and screenGui.UnderPopUpFrame:FindFirstChild("RetroGuiTopMenu")
+                and screenGui.UnderPopUpFrame.RetroGuiTopMenu:FindFirstChild("TopMenuFrame2")
+                and screenGui.UnderPopUpFrame.RetroGuiTopMenu.TopMenuFrame2:FindFirstChild("RoundLabel")
+            
+            if roundLabel then
+                local roundText = roundLabel.Text -- e.g. "ROUND 1"
+                local roundNum = tonumber(roundText:match("ROUND%s+(%d+)"))
+                if roundNum then
+                    CurrentRound = roundNum
+                end
+            end
+        end)
+        task.wait(10)
     end
 end)
 
@@ -486,6 +511,16 @@ retroTab:CreateToggle({
     Flag = "AutoBuyBricks",
     Callback = function(Value)
         Settings.AutoBuyBricks = Value
+        SaveConfig()
+    end,
+})
+
+retroTab:CreateToggle({
+    Name = "farm pollen (r1-6)",
+    CurrentValue = Settings.FarmPollen,
+    Flag = "FarmPollen",
+    Callback = function(Value)
+        Settings.FarmPollen = Value
         SaveConfig()
     end,
 })
@@ -901,46 +936,116 @@ task.spawn(function()
 
                     -- Nach Token-Sammeln: Falls keine Slimes gefunden, gehe zur Fallback Position
                     if not TargetSlimeBlob then
-                        local fallbackPos = Vector3.new(-47064, 291.907898, -183.909866)
-                        local distance = (fallbackPos - HumanoidRootPart.Position).Magnitude
-                        if distance > 1 then
-                            local speed = 69
-                            local duration = distance / speed
-                            local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear)
-                            local targetCFrame = CFrame.new(fallbackPos) * upRotation
-
-                            if tick() < AutoSlime_blockUntil then
-                                task.wait()
-                            else
-                                cancelActiveAutoSlime()
-                                local tween = TweenService:Create(HumanoidRootPart, tweenInfo, {CFrame = targetCFrame})
-                                local platTween = TweenService:Create(platform, tweenInfo, {CFrame = CFrame.new(fallbackPos - Vector3.new(0, 3, 0))})
-
-                                tween:Play()
-                                platTween:Play()
-                                AutoSlime_activeTween = tween
-                                AutoSlime_activePlatTween = platTween
-                                AutoSlime_activeConn = game:GetService("RunService").Heartbeat:Connect(function()
-                                    if not Settings.AutoSlimeKill or not AutoSlime_activeTween or game.PlaceId ~= 17579225831 then 
-                                        if AutoSlime_activeConn then AutoSlime_activeConn:Disconnect() AutoSlime_activeConn = nil end
-                                        return 
+                        if Settings.FarmPollen and CurrentRound > 0 and CurrentRound <= 6 then
+                            -- Farm Pollen Logic for Rounds 1-6
+                            local farmCoords = {
+                                Vector3.new(-47014, 292, 64),
+                                Vector3.new(-46987, 292, 64),
+                                Vector3.new(-46987, 292, 86),
+                                Vector3.new(-47014, 292, 86)
+                            }
+                            
+                            local firstCoord = true
+                            for _, targetPos in ipairs(farmCoords) do
+                                -- Check if slime appeared during move or toggle turned off
+                                local foundSlime = false
+                                if workspace:FindFirstChild("Monsters") then
+                                    for _, monsterFolder in pairs(workspace.Monsters:GetChildren()) do
+                                        local folderName = tostring(monsterFolder.Name)
+                                        if folderName:match("^Zombie") or folderName:match("^Slime") then
+                                            foundSlime = true
+                                            break
+                                        end
                                     end
-                                    HumanoidRootPart.AssemblyLinearVelocity = Vector3.zero
-                                    HumanoidRootPart.AssemblyAngularVelocity = Vector3.zero
-                                    if platform and platform:IsA("BasePart") then
-                                        platform.AssemblyLinearVelocity = Vector3.zero
-                                        platform.AssemblyAngularVelocity = Vector3.zero
-                                    end
-                                end)
+                                end
+                                if foundSlime or not Settings.AutoSlimeKill or not Settings.FarmPollen or CurrentRound > 6 then break end
 
-                                tween.Completed:Wait()
-                                if AutoSlime_activeConn then AutoSlime_activeConn:Disconnect() AutoSlime_activeConn = nil end
-                                AutoSlime_activeTween = nil
-                                AutoSlime_activePlatTween = nil
+                                local dist = (targetPos - HumanoidRootPart.Position).Magnitude
+                                local speed = 69
+                                local duration = dist / speed
+                                local targetCFrame = CFrame.new(targetPos) * upRotation
+                                
+                                if tick() >= AutoSlime_blockUntil then
+                                    cancelActiveAutoSlime()
+                                    local tween = TweenService:Create(HumanoidRootPart, TweenInfo.new(duration, Enum.EasingStyle.Linear), {CFrame = targetCFrame})
+                                    local platTween = TweenService:Create(platform, TweenInfo.new(duration, Enum.EasingStyle.Linear), {CFrame = CFrame.new(targetPos - Vector3.new(0, 3, 0))})
+                                    
+                                    tween:Play()
+                                    platTween:Play()
+                                    AutoSlime_activeTween = tween
+                                    AutoSlime_activePlatTween = platTween
+                                    
+                                    AutoSlime_activeConn = game:GetService("RunService").Heartbeat:Connect(function()
+                                        if not Settings.AutoSlimeKill or not AutoSlime_activeTween or game.PlaceId ~= 17579225831 then 
+                                            if AutoSlime_activeConn then AutoSlime_activeConn:Disconnect() AutoSlime_activeConn = nil end
+                                            return 
+                                        end
+                                        HumanoidRootPart.AssemblyLinearVelocity = Vector3.zero
+                                        HumanoidRootPart.AssemblyAngularVelocity = Vector3.zero
+                                        if platform and platform:IsA("BasePart") then
+                                            platform.AssemblyLinearVelocity = Vector3.zero
+                                            platform.AssemblyAngularVelocity = Vector3.zero
+                                        end
+                                    end)
+                                    
+                                    tween.Completed:Wait()
+                                    if AutoSlime_activeConn then AutoSlime_activeConn:Disconnect() AutoSlime_activeConn = nil end
+                                    AutoSlime_activeTween = nil
+                                    AutoSlime_activePlatTween = nil
+                                    
+                                    if firstCoord then
+                                        -- Place Sprinkler at the first coordinate
+                                        pcall(function()
+                                            local args = {[1] = {["Name"] = "Sprinkler Builder"}}
+                                            game:GetService("ReplicatedStorage").Events.PlayerActivesCommand:FireServer(unpack(args))
+                                        end)
+                                        firstCoord = false
+                                    end
+                                end
                             end
                         else
-                            HumanoidRootPart.CFrame = CFrame.new(fallbackPos) * upRotation
-                            platform.CFrame = CFrame.new(fallbackPos - Vector3.new(0, 3, 0))
+                            -- Original Fallback Logic
+                            local fallbackPos = Vector3.new(-47064, 291.907898, -183.909866)
+                            local distance = (fallbackPos - HumanoidRootPart.Position).Magnitude
+                            if distance > 1 then
+                                local speed = 69
+                                local duration = distance / speed
+                                local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear)
+                                local targetCFrame = CFrame.new(fallbackPos) * upRotation
+
+                                if tick() < AutoSlime_blockUntil then
+                                    task.wait()
+                                else
+                                    cancelActiveAutoSlime()
+                                    local tween = TweenService:Create(HumanoidRootPart, tweenInfo, {CFrame = targetCFrame})
+                                    local platTween = TweenService:Create(platform, tweenInfo, {CFrame = CFrame.new(fallbackPos - Vector3.new(0, 3, 0))})
+
+                                    tween:Play()
+                                    platTween:Play()
+                                    AutoSlime_activeTween = tween
+                                    AutoSlime_activePlatTween = platTween
+                                    AutoSlime_activeConn = game:GetService("RunService").Heartbeat:Connect(function()
+                                        if not Settings.AutoSlimeKill or not AutoSlime_activeTween or game.PlaceId ~= 17579225831 then 
+                                            if AutoSlime_activeConn then AutoSlime_activeConn:Disconnect() AutoSlime_activeConn = nil end
+                                            return 
+                                        end
+                                        HumanoidRootPart.AssemblyLinearVelocity = Vector3.zero
+                                        HumanoidRootPart.AssemblyAngularVelocity = Vector3.zero
+                                        if platform and platform:IsA("BasePart") then
+                                            platform.AssemblyLinearVelocity = Vector3.zero
+                                            platform.AssemblyAngularVelocity = Vector3.zero
+                                        end
+                                    end)
+
+                                    tween.Completed:Wait()
+                                    if AutoSlime_activeConn then AutoSlime_activeConn:Disconnect() AutoSlime_activeConn = nil end
+                                    AutoSlime_activeTween = nil
+                                    AutoSlime_activePlatTween = nil
+                                end
+                            else
+                                HumanoidRootPart.CFrame = CFrame.new(fallbackPos) * upRotation
+                                platform.CFrame = CFrame.new(fallbackPos - Vector3.new(0, 3, 0))
+                            end
                         end
                     end
                 else
