@@ -1035,7 +1035,13 @@ task.spawn(function()
         local hrp = character.HumanoidRootPart
         local bricks = getBricks()
 
-        if maxWait and maxWait > 0 then
+        -- Wenn maxWait == nil: warte unbegrenzt bis genug Bricks vorhanden sind (solange AutoUpgrade und ScriptRunning true)
+        if maxWait == nil then
+            while bricks < cost and Settings.AutoUpgrade and ScriptRunning do
+                task.wait(1)
+                bricks = getBricks()
+            end
+        elseif maxWait > 0 then
             local waited = 0
             while bricks < cost and waited < maxWait and Settings.AutoUpgrade and ScriptRunning do
                 task.wait(1)
@@ -1131,8 +1137,8 @@ task.spawn(function()
                         local firebrandBtnFolder = tycoonButtons:FindFirstChild("Buy Firebrand")
                         local firebrandBtn = firebrandBtnFolder and firebrandBtnFolder:FindFirstChild("Button")
                         if firebrandBtn then
-                            -- Warte bis genug Bricks für Firebrand vorhanden sind (Timeout 120s)
-                            local bought = handleButton(firebrandBtn, 300, "Firebrand", false, 1200)
+                            -- Warte unbegrenzt bis genug Bricks für Firebrand vorhanden sind
+                            local bought = handleButton(firebrandBtn, 300, "Firebrand", false)
                             if not bought then
                                 isAutoUpgradeRunning = false
                                 return
