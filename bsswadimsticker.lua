@@ -382,7 +382,7 @@ local function TweenToMask(position, maskType)
     
     local function doTween(targetPos)
         local distance = (targetPos - HumRoot.Position).Magnitude
-        local duration = distance / 70
+        local duration = distance / 69
         local tween = TweenService:Create(HumRoot, TweenInfo.new(duration, Enum.EasingStyle.Linear, Enum.EasingDirection.Out), {
             CFrame = CFrame.new(targetPos)
         })
