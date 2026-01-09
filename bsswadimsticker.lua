@@ -653,6 +653,9 @@ task.spawn(function()
                 uiVisible = Rayfield:IsVisible()
             end)
             
+            -- Debug: print Rayfield visibility status
+            print("[AutoHit] Rayfield:IsVisible() = " .. tostring(uiVisible))
+            
             -- Nur AutoHit wenn UI nicht sichtbar ist
             if not uiVisible then
                 pcall(function()
@@ -723,12 +726,13 @@ task.spawn(function()
                 if workspace:FindFirstChild("Monsters") then
                     for _, monsterFolder in pairs(workspace.Monsters:GetChildren()) do
                         local folderName = tostring(monsterFolder.Name)
-                        if folderName == "Zombie (Lvl 2)" or folderName == "Slime (Lvl 4)" then
+                        -- Match any Zombie or Slime regardless of level
+                        if folderName:match("^Zombie") or folderName:match("^Slime") then
                             for _, monster in pairs(monsterFolder:GetChildren()) do
                                 for _, desc in pairs(monster:GetDescendants()) do
                                     if desc:IsA("BasePart") then
-                                        -- Only target the exact parts requested by the user
-                                        if folderName == "Zombie (Lvl 2)" and desc.Name == "Torso" then
+                                        -- Only target the exact parts: Torso for Zombie, Blob2 for Slime
+                                        if folderName:match("^Zombie") and desc.Name == "Torso" then
                                             local zDiff = math.abs(desc.Position.Z - 230)
                                             local horizDist = (Vector2.new(desc.Position.X - HumanoidRootPart.Position.X, desc.Position.Z - 230)).Magnitude
                                             if zDiff < bestZDiff or (zDiff == bestZDiff and horizDist < bestTie) then
@@ -737,7 +741,7 @@ task.spawn(function()
                                                 TargetSlimeBlob = desc
                                             end
                                         end
-                                        if folderName == "Slime (Lvl 4)" and desc.Name == "Blob2" then
+                                        if folderName:match("^Slime") and desc.Name == "Blob2" then
                                             local zDiff = math.abs(desc.Position.Z - 230)
                                             local horizDist = (Vector2.new(desc.Position.X - HumanoidRootPart.Position.X, desc.Position.Z - 230)).Magnitude
                                             if zDiff < bestZDiff or (zDiff == bestZDiff and horizDist < bestTie) then
@@ -766,11 +770,12 @@ task.spawn(function()
                         if workspace:FindFirstChild("Monsters") then
                                 for _, monsterFolder in pairs(workspace.Monsters:GetChildren()) do
                                     local folderName = tostring(monsterFolder.Name)
-                                    if folderName == "Zombie (Lvl 2)" or folderName == "Slime (Lvl 4)" then
+                                    -- Match any Zombie or Slime regardless of level
+                                    if folderName:match("^Zombie") or folderName:match("^Slime") then
                                         for _, monster in pairs(monsterFolder:GetChildren()) do
                                             for _, desc in pairs(monster:GetDescendants()) do
                                                 if desc:IsA("BasePart") then
-                                                    if folderName == "Zombie (Lvl 2)" and desc.Name == "Torso" then
+                                                    if folderName:match("^Zombie") and desc.Name == "Torso" then
                                                         local zDiff = math.abs(desc.Position.Z - 230)
                                                         local horizDist = (Vector2.new(desc.Position.X - HumanoidRootPart.Position.X, desc.Position.Z - 230)).Magnitude
                                                         if zDiff < checkZDiff or (zDiff == checkZDiff and horizDist < checkTie) then
@@ -779,7 +784,7 @@ task.spawn(function()
                                                             CheckSlimeBlob = desc
                                                         end
                                                     end
-                                                    if folderName == "Slime (Lvl 4)" and desc.Name == "Blob2" then
+                                                    if folderName:match("^Slime") and desc.Name == "Blob2" then
                                                         local zDiff = math.abs(desc.Position.Z - 230)
                                                         local horizDist = (Vector2.new(desc.Position.X - HumanoidRootPart.Position.X, desc.Position.Z - 230)).Magnitude
                                                         if zDiff < checkZDiff or (zDiff == checkZDiff and horizDist < checkTie) then
