@@ -998,7 +998,7 @@ task.spawn(function()
             if isBee then
                 print("[DEBUG] Firing BeeSelect UI signal for", name)
                 pcall(function()
-                    firesignal(game:GetService("Players").LocalPlayer.PlayerGui.ScreenGui.MiscPopUpFrame.BeeSelectScreen.Frame.Choice2.MouseButton1Click)
+                    firesignal(game:GetService("Players").LocalPlayer.PlayerGui.ScreenGui.MiscPopUpFrame.BeeSelectScreen.Frame.Choice2.Button.MouseButton1Click)
                 end)
             end
             
