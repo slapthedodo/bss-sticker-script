@@ -47,6 +47,7 @@ local AutoSlime_blockUntil = 0
 local HasFirebrand = false
 local HasSword = false
 local CurrentWeapon = "Sword" -- Default to Sword since it's the first purchase
+local IsWeaponEquipped = true -- State tracking to avoid spamming remotes
 
 -- Ensure AutoUpgrade runs only once per user activation while leaving the UI toggle on
 local AutoUpgrade_hasRun = false
@@ -725,12 +726,15 @@ task.spawn(function()
     local collectingTokensNow = false
     local isSquareFarming = false
 
-    local function equipWeapon()
+    local function equipWeapon(forceWeapon)
         if HasSword or HasFirebrand then
-            pcall(function()
-                local args = {[1] = {["Name"] = CurrentWeapon}}
-                game:GetService("ReplicatedStorage").Events.PlayerActivesCommand:FireServer(unpack(args))
-            end)
+            if IsWeaponEquipped ~= forceWeapon then
+                IsWeaponEquipped = forceWeapon
+                pcall(function()
+                    local args = {[1] = {["Name"] = CurrentWeapon}}
+                    game:GetService("ReplicatedStorage").Events.PlayerActivesCommand:FireServer(unpack(args))
+                end)
+            end
         end
     end
 
@@ -822,7 +826,7 @@ task.spawn(function()
                 if not TargetSlimeBlob and not collectingTokensNow then
                     if isSquareFarming then
                         isSquareFarming = false
-                        equipWeapon() -- Switch back to weapon if we were farming
+                        equipWeapon(true) -- Switch back to weapon if we were farming
                     end
                     collectingTokensNow = true
                     local collectingTokens = true
@@ -958,7 +962,7 @@ task.spawn(function()
                             if not isSquareFarming then
                                 isSquareFarming = true
                                 -- Equip farm tool (toggle current weapon)
-                                equipWeapon()
+                                equipWeapon(false)
                             end
                             -- Farm Pollen Logic for Rounds 0-6
                             local farmCoords = {
@@ -1073,10 +1077,10 @@ task.spawn(function()
                     end
                 else
                     -- Equip weapon before targeting slime
-                    if not isSquareFarming then
-                        equipWeapon()
+                    if isSquareFarming then
+                        isSquareFarming = false
+                        equipWeapon(true)
                     end
-                    isSquareFarming = false
                     -- Ziel-Slime gefunden: tween zum Slime (Y fixed to targetY)
                     local targetPos = TargetSlimeBlob.Position
                     local adjustedTarget = Vector3.new(targetPos.X, targetY, targetPos.Z)
