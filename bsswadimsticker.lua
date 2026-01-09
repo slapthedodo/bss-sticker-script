@@ -48,7 +48,6 @@ local HasFirebrand = false
 local HasSword = false
 local CurrentWeapon = "Sword" -- Default to Sword since it's the first purchase
 local IsWeaponEquipped = true -- State tracking to avoid spamming remotes
-local FarmingToolEquipped = false -- Track if farming tool has been equipped during this farming session
 
 -- Ensure AutoUpgrade runs only once per user activation while leaving the UI toggle on
 local AutoUpgrade_hasRun = false
@@ -827,7 +826,6 @@ task.spawn(function()
                 if not TargetSlimeBlob and not collectingTokensNow then
                     if isSquareFarming then
                         isSquareFarming = false
-                        FarmingToolEquipped = false -- Reset flag when leaving farming
                         equipWeapon(true) -- Switch back to weapon if we were farming
                     end
                     collectingTokensNow = true
@@ -963,12 +961,8 @@ task.spawn(function()
                         if Settings.FarmPollen and CurrentRound >= 0 and CurrentRound <= 6 then
                             if not isSquareFarming then
                                 isSquareFarming = true
-                                FarmingToolEquipped = false -- Reset flag when starting new farming session
-                            end
-                            -- Equip farm tool only once when farming starts
-                            if not FarmingToolEquipped then
-                                equipWeapon(false) -- Equip farm tool
-                                FarmingToolEquipped = true -- Mark as equipped so we don't do it again
+                                -- Equip farm tool (toggle current weapon)
+                                equipWeapon(false)
                             end
                             -- Farm Pollen Logic for Rounds 0-6
                             local farmCoords = {
@@ -1037,12 +1031,6 @@ task.spawn(function()
                                 end
                             end
                         else
-                            -- Reset farming flag if we're leaving farming mode
-                            if isSquareFarming then
-                                isSquareFarming = false
-                                FarmingToolEquipped = false
-                                equipWeapon(true)
-                            end
                             -- Original Fallback Logic
                             local fallbackPos = Vector3.new(-47064, 291.907898, -183.909866)
                             local distance = (fallbackPos - HumanoidRootPart.Position).Magnitude
@@ -1143,8 +1131,6 @@ task.spawn(function()
             if lastToggleState then
                 lastToggleState = false
                 collectingTokensNow = false
-                isSquareFarming = false
-                FarmingToolEquipped = false
                 -- Cancel any active tweens/handlers
                 cancelActiveAutoSlime()
                 if platform then platform:Destroy() platform = nil end
@@ -1184,9 +1170,6 @@ task.spawn(function()
         end
         local hrp = character.HumanoidRootPart
         local bricks = getBricks()
-
-        -- Check place ID first
-        if game.PlaceId ~= 17579225831 then return false end
 
         -- If square farming is active, don't buy weapons or upgrades that might interfere
         if isSquareFarming then return false end
@@ -1439,7 +1422,7 @@ end)
 -- Loop 8: AutoBuyBricks (8s)
 task.spawn(function()
     while ScriptRunning do
-        if Settings.AutoBuyBricks and game.PlaceId == 17579225831 and not isSquareFarming then
+        if Settings.AutoBuyBricks and game.PlaceId == 17579225831 then
             pcall(function()
                 local character = LocalPlayer.Character
                 if character and character:FindFirstChild("HumanoidRootPart") then
