@@ -44,6 +44,9 @@ local AutoSlime_activePlatTween = nil
 local AutoSlime_activeConn = nil
 local AutoSlime_blockUntil = 0
 
+-- Ensure AutoUpgrade runs only once per user activation while leaving the UI toggle on
+local AutoUpgrade_hasRun = false
+
 -- Helper to cancel any active AutoSlime tweens/connections
 local function cancelActiveAutoSlime()
     pcall(function()
@@ -1117,7 +1120,7 @@ task.spawn(function()
     end
 
     while ScriptRunning do
-        if Settings.AutoUpgrade and game.PlaceId == 17579225831 then
+        if Settings.AutoUpgrade and game.PlaceId == 17579225831 and not AutoUpgrade_hasRun then
             if not isAutoUpgradeRunning then
                 isAutoUpgradeRunning = true
 
@@ -1167,15 +1170,16 @@ task.spawn(function()
                     end
                 end)
 
-                -- After completing the cycle, disable the toggle so it only runs once
-                -- per user activation, but do this only after the purchase cycle
-                -- finished to avoid premature self-disabling.
-                Settings.AutoUpgrade = false
-                SaveConfig()
+                -- After completing the cycle, mark AutoUpgrade as having run
+                -- so it won't run again until the user toggles it off and back on.
+                AutoUpgrade_hasRun = true
                 isAutoUpgradeRunning = false
             end
         else
             isAutoUpgradeRunning = false
+            if not Settings.AutoUpgrade then
+                AutoUpgrade_hasRun = false
+            end
         end
         task.wait(1)
     end
