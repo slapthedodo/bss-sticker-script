@@ -652,10 +652,7 @@ task.spawn(function()
             pcall(function()
                 uiVisible = Rayfield:IsVisible()
             end)
-            
-            -- Debug: print Rayfield visibility status
-            print("[AutoHit] Rayfield:IsVisible() = " .. tostring(uiVisible))
-            
+
             -- Nur AutoHit wenn UI nicht sichtbar ist
             if not uiVisible then
                 pcall(function()
