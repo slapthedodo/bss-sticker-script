@@ -953,7 +953,7 @@ task.spawn(function()
                 end)
             end
         end
-        task.wait(0.1)
+        task.wait()
     end
 end)
 
@@ -992,14 +992,23 @@ task.spawn(function()
             button.CFrame = oldCFrame * CFrame.new(0, 50, 0)
             
             if isBee then
-                for i = 1, 3 do -- Try up to 3 times
+                task.wait(1) -- Wait for UI to potentially appear
+                for i = 1, 5 do -- Try up to 5 times
                     local success, err = pcall(function()
-                        firesignal(game:GetService("Players").LocalPlayer.PlayerGui.ScreenGui.MiscPopUpFrame.BeeSelectScreen.Frame.Choice2.Button.MouseButton1Click)
+                        local screenGui = game:GetService("Players").LocalPlayer.PlayerGui:FindFirstChild("ScreenGui")
+                        local miscPopUp = screenGui and screenGui:FindFirstChild("MiscPopUpFrame")
+                        local beeSelect = miscPopUp and miscPopUp:FindFirstChild("BeeSelectScreen")
+                        
+                        if beeSelect and beeSelect.Visible then
+                            firesignal(beeSelect.Frame.Choice2.Button.MouseButton1Click)
+                            return true
+                        end
+                        return false
                     end)
-                    if success then
+                    if success and err then
                         break -- Signal fired successfully, exit loop
                     else
-                        task.wait(0.2) -- Wait a bit before retrying
+                        task.wait(0.5) -- Wait a bit before retrying
                     end
                 end
             end
@@ -1053,6 +1062,7 @@ task.spawn(function()
                                     isAutoUpgradeRunning = false
                                     return 
                                 end
+                                task.wait(1) -- Extra wait after each bee purchase to avoid UI spam/overlap
                             else
                                 print("[DEBUG] Unlock Bees Button not found!")
                             end
