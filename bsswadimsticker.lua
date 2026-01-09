@@ -1089,7 +1089,7 @@ task.spawn(function()
                             print("[DEBUG] Sword button not found!")
                         end
 
-                        -- 2. Bee Upgrades
+                        -- 2. Bee Upgrades (First 3)
                         local beeUpgrades = {
                             {name = "Unlock Bees Button", cost = 5},
                             {name = "Unlock Bees Button", cost = 15},
@@ -1111,6 +1111,32 @@ task.spawn(function()
                             else
                                 print("[DEBUG] Unlock Bees Button not found!")
                             end
+                        end
+
+                        -- 3. Firebrand (300 bricks)
+                        local firebrandBtnFolder = tycoonButtons:FindFirstChild("Buy Firebrand")
+                        local firebrandBtn = firebrandBtnFolder and firebrandBtnFolder:FindFirstChild("Button")
+                        if firebrandBtn then
+                            local bought = handleButton(firebrandBtn, 300, "Firebrand", false)
+                            if not bought then
+                                isAutoUpgradeRunning = false
+                                return
+                            end
+                        else
+                            print("[DEBUG] Buy Firebrand button not found!")
+                        end
+
+                        -- 4. 4th Bee (40 bricks)
+                        local fourthBeeBtnFolder = tycoonButtons:FindFirstChild("Unlock Bees Button")
+                        local fourthBeeBtn = fourthBeeBtnFolder and fourthBeeBtnFolder:FindFirstChild("Button")
+                        if fourthBeeBtn then
+                            local bought = handleButton(fourthBeeBtn, 40, "Unlock Bees Button (4th)", true)
+                            if not bought then
+                                isAutoUpgradeRunning = false
+                                return
+                            end
+                        else
+                            print("[DEBUG] 4th Bee button not found!")
                         end
                     else
                         print("[DEBUG] TycoonButtons folder not found!")
