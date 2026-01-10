@@ -70,32 +70,30 @@ local function EquipTool(targetRemoteName)
     local character = LocalPlayer.Character
     if not character then return end
 
-    print("[DEBUG] EquipTool called for: " .. tostring(targetRemoteName) .. " | Current: " .. tostring(currentEquippedSword))
+    local equippedTool = character:FindFirstChildOfClass("Tool")
+    local currentRemoteName = nil
+    if equippedTool then
+        if equippedTool.Name == "ClassicSword" then 
+            currentRemoteName = "Sword"
+        elseif equippedTool.Name == "ClassicFirebrand" then 
+            currentRemoteName = "Firebrand"
+        end
+    end
 
     if targetRemoteName == "FarmingTool" then
-        if currentEquippedSword ~= nil then
-            print("[DEBUG] Unequipping " .. currentEquippedSword .. " to get Farming Tool")
+        if currentRemoteName ~= nil then
             pcall(function()
-                local args = {[1] = {["Name"] = currentEquippedSword}}
+                local args = {[1] = {["Name"] = currentRemoteName}}
                 ReplicatedStorage.Events.PlayerActivesCommand:FireServer(unpack(args))
             end)
-            task.wait(0.2)
-        else
-            print("[DEBUG] Already have Farming Tool (no sword equipped)")
         end
     else
-        -- It's a sword: "Sword" or "Firebrand"
-        if currentEquippedSword == targetRemoteName then
-            print("[DEBUG] Already equipped " .. targetRemoteName)
-            return
+        if currentRemoteName ~= targetRemoteName then
+            pcall(function()
+                local args = {[1] = {["Name"] = targetRemoteName}}
+                ReplicatedStorage.Events.PlayerActivesCommand:FireServer(unpack(args))
+            end)
         end
-
-        print("[DEBUG] Equipping " .. targetRemoteName)
-        pcall(function()
-            local args = {[1] = {["Name"] = targetRemoteName}}
-            ReplicatedStorage.Events.PlayerActivesCommand:FireServer(unpack(args))
-        end)
-        task.wait(0.2)
     end
 end
 
@@ -1004,9 +1002,7 @@ task.spawn(function()
                     if not TargetSlimeBlob then
                         if Settings.FarmPollen and CurrentRound >= 0 and CurrentRound <= 6 then
                             -- Ensure Farming Tool is equipped for farming
-                            if currentEquippedSword ~= nil then
-                                EquipTool("FarmingTool")
-                            end
+                            EquipTool("FarmingTool")
                             -- Farm Pollen Logic for Rounds 0-6
                             local farmCoords = {
                                 Vector3.new(-47030, 290, 64),
@@ -1064,9 +1060,7 @@ task.spawn(function()
                                     AutoSlime_activePlatTween = nil
                                     
                                     if firstCoord and not sprinklerPlaced then
-                                        if currentEquippedSword ~= nil then
-                                            EquipTool("FarmingTool")
-                                        end
+                                        EquipTool("FarmingTool")
                                         task.wait(0.2) -- Give some time for the tool to unequip
                                         -- Place Sprinkler at the first coordinate
                                         pcall(function()
@@ -1080,9 +1074,7 @@ task.spawn(function()
                             end
                         else
                             -- Original Fallback Logic
-                            if currentEquippedSword ~= nil then
-                                EquipTool("FarmingTool")
-                            end
+                            EquipTool("FarmingTool")
                             local fallbackPos = Vector3.new(-47064, 291.907898, -183.909866)
                             local distance = (fallbackPos - HumanoidRootPart.Position).Magnitude
                             if distance > 1 then
@@ -1143,12 +1135,10 @@ task.spawn(function()
                             cancelActiveAutoSlime()
 
                             -- Equip sword before tweening to monster
-                            if hasFirebrand and currentEquippedSword ~= "Firebrand" then
+                            if hasFirebrand then
                                 EquipTool("Firebrand")
-                                task.wait(0.2)
-                            elseif hasClassicSword and currentEquippedSword ~= "ClassicSword" then
-                                EquipTool("ClassicSword")
-                                task.wait(0.2)
+                            elseif hasClassicSword then
+                                EquipTool("Sword")
                             end
 
                             local tween = TweenService:Create(HumanoidRootPart, tweenInfo, {CFrame = targetCFrame})
