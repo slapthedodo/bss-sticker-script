@@ -640,7 +640,7 @@ retroTab:CreateToggle({
 
 retroTab:CreateSlider({
     Name = "killaura slider",
-    Range = {5, 80},
+    Range = {20, 80},
     Increment = 1,
     Suffix = "studs",
     CurrentValue = Settings.KillAuraRange,
