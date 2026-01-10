@@ -36,7 +36,8 @@ local Settings = {
     AutoUpgrade = false,
     AutoBuyBricks = false,
     InterruptAutoSlime = false,
-    FarmPollen = false
+    FarmPollen = false,
+    AutoToolSwitch = false
 }
 
 -- Global states for equipped/owned items
@@ -248,6 +249,7 @@ local function LoadConfig()
             if result.AutoUpgrade ~= nil then Settings.AutoUpgrade = result.AutoUpgrade end
             if result.AutoBuyBricks ~= nil then Settings.AutoBuyBricks = result.AutoBuyBricks end
             if result.FarmPollen ~= nil then Settings.FarmPollen = result.FarmPollen end
+            if result.AutoToolSwitch ~= nil then Settings.AutoToolSwitch = result.AutoToolSwitch end
         end
     end
 end
@@ -608,6 +610,16 @@ retroTab:CreateToggle({
     Flag = "FarmPollen",
     Callback = function(Value)
         Settings.FarmPollen = Value
+        SaveConfig()
+    end,
+})
+
+retroTab:CreateToggle({
+    Name = "Auto Tool Switch (Farming/Slime)",
+    CurrentValue = Settings.AutoToolSwitch,
+    Flag = "AutoToolSwitch",
+    Callback = function(Value)
+        Settings.AutoToolSwitch = Value
         SaveConfig()
     end,
 })
@@ -987,7 +999,7 @@ task.spawn(function()
                                 task.wait()
                             else
                                 cancelActiveAutoSlime()
-                                if currentEquippedSword ~= nil and tick() - lastEquipTime > 0.5 then
+                                if Settings.AutoToolSwitch and currentEquippedSword ~= nil and tick() - lastEquipTime > 0.5 then
                                     EquipTool("FarmingTool")
                                 end
                                 local tween = TweenService:Create(HumanoidRootPart, TweenInfo.new(duration, Enum.EasingStyle.Linear), {CFrame = targetCFrame})
@@ -997,9 +1009,9 @@ task.spawn(function()
                                 AutoSlime_activeTween = tween
                                 AutoSlime_activePlatTween = platTween
                                 AutoSlime_activeConn = game:GetService("RunService").Heartbeat:Connect(function()
-                                    if not Settings.AutoSlimeKill or not AutoSlime_activeTween or game.PlaceId ~= 17579225831 then 
+                                    if not Settings.AutoSlimeKill or not AutoSlime_activeTween or game.PlaceId ~= 17579225831 then
                                         if AutoSlime_activeConn then AutoSlime_activeConn:Disconnect() AutoSlime_activeConn = nil end
-                                        return 
+                                        return
                                     end
                                     HumanoidRootPart.AssemblyLinearVelocity = Vector3.zero
                                     HumanoidRootPart.AssemblyAngularVelocity = Vector3.zero
@@ -1034,7 +1046,7 @@ task.spawn(function()
                     if not TargetSlimeBlob then
                         if Settings.FarmPollen and CurrentRound >= 0 and CurrentRound <= 8 then
                             -- Farm Pollen Logic for Rounds 0-8
-                            if currentEquippedSword ~= nil and tick() - lastEquipTime > 0.5 then
+                            if Settings.AutoToolSwitch and currentEquippedSword ~= nil and tick() - lastEquipTime > 0.5 then
                                 EquipTool("FarmingTool")
                             end
                             local farmCoords = {
@@ -1093,7 +1105,7 @@ task.spawn(function()
                                     AutoSlime_activePlatTween = nil
                                     
                                     if firstCoord and not sprinklerPlaced then
-                                        if currentEquippedSword ~= nil then
+                                        if Settings.AutoToolSwitch and currentEquippedSword ~= nil then
                                             EquipTool("FarmingTool")
                                         end
                                         task.wait(0.2) -- Give some time for the tool to unequip
@@ -1168,7 +1180,8 @@ task.spawn(function()
                         else
                             cancelActiveAutoSlime()
 
-                            -- Equip sword before tweening to monster
+                        -- Equip sword before tweening to monster
+                        if Settings.AutoToolSwitch then
                             if hasIllumina and currentEquippedSword ~= "ClassicIllumina" and tick() - lastEquipTime > 0.5 then
                                 EquipTool("ClassicIllumina")
                                 task.wait(0.1)
@@ -1179,6 +1192,7 @@ task.spawn(function()
                                 EquipTool("ClassicSword")
                                 task.wait(0.1)
                             end
+                        end
 
                             local tween = TweenService:Create(HumanoidRootPart, tweenInfo, {CFrame = targetCFrame})
                             local platTween = TweenService:Create(platform, tweenInfo, {CFrame = CFrame.new(adjustedTarget - Vector3.new(0, 3, 0))})
@@ -1207,12 +1221,14 @@ task.spawn(function()
                             AutoSlime_activePlatTween = nil
                         end
                     else
-                        if hasIllumina and currentEquippedSword ~= "ClassicIllumina" and tick() - lastEquipTime > 0.5 then
-                            EquipTool("ClassicIllumina")
-                        elseif hasFirebrand and currentEquippedSword ~= "ClassicFirebrand" and tick() - lastEquipTime > 0.5 then
-                            EquipTool("ClassicFirebrand")
-                        elseif hasClassicSword and currentEquippedSword ~= "ClassicSword" and tick() - lastEquipTime > 0.5 then
-                            EquipTool("ClassicSword")
+                        if Settings.AutoToolSwitch then
+                            if hasIllumina and currentEquippedSword ~= "ClassicIllumina" and tick() - lastEquipTime > 0.5 then
+                                EquipTool("ClassicIllumina")
+                            elseif hasFirebrand and currentEquippedSword ~= "ClassicFirebrand" and tick() - lastEquipTime > 0.5 then
+                                EquipTool("ClassicFirebrand")
+                            elseif hasClassicSword and currentEquippedSword ~= "ClassicSword" and tick() - lastEquipTime > 0.5 then
+                                EquipTool("ClassicSword")
+                            end
                         end
                         HumanoidRootPart.CFrame = CFrame.new(HumanoidRootPart.Position.X, targetY, HumanoidRootPart.Position.Z) * upRotation
                         platform.CFrame = CFrame.new(HumanoidRootPart.Position - Vector3.new(0, 3, 0))
