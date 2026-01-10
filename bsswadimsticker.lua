@@ -1403,14 +1403,15 @@ task.spawn(function()
                         end
 
                         -- 7. Illumina (1500 bricks)
-                        local illuminaBtnFolder = tycoonButtons:FindFirstChild("Buy Illumina")
-                        local illuminaBtn = illuminaBtnFolder and illuminaBtn:FindFirstChild("Button")
+                        local illuminaBtn = tycoonButtons:FindFirstChild("Buy Illumina")
                         if illuminaBtn then
                             local bought = handleButton(illuminaBtn, 1500, "Illumina", false)
                             if not bought then
                                 isAutoUpgradeRunning = false
                                 return
                             end
+                        else
+                            print("Illumina button not found.")
                         end
 
                         -- 8. Bloxy Cola (200 bricks)
