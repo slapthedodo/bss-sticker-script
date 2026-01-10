@@ -1446,7 +1446,7 @@ task.spawn(function()
     end
 end)
 
--- Loop 8: AutoBuyBricks (7s)
+-- Loop 8: AutoBuyBricks (6s)
 task.spawn(function()
     while ScriptRunning do
         if Settings.AutoBuyBricks and game.PlaceId == 17579225831 then
@@ -1465,7 +1465,7 @@ task.spawn(function()
                     end
                 end
             end)
-            task.wait(7)
+            task.wait(6)
         else
             task.wait(1)
         end
