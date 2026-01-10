@@ -79,7 +79,7 @@ local function EquipTool(toolName)
         if currentTool and (currentTool.Name == "ClassicSword" or currentTool.Name == "ClassicFirebrand") then
             local oldName = currentTool.Name
             local remoteName = (oldName == "ClassicSword" and "Sword") or (oldName == "ClassicFirebrand" and "Firebrand")
-            print("[DEBUG] Unequipping " .. oldName .. " (Remote: " .. tostring(remoteName) .. ")")
+            print("unequipping " .. oldName .. " (Remote: " .. tostring(remoteName) .. ")")
             pcall(function()
                 local args = {
                     [1] = {
@@ -99,7 +99,7 @@ local function EquipTool(toolName)
             return -- Already equipped
         end
 
-        print("[DEBUG] Equipping " .. toolName .. " (Remote: " .. tostring(remoteName) .. ")")
+        print("equip " .. toolName .. " (Remote: " .. tostring(remoteName) .. ")")
         pcall(function()
             local args = {
                 [1] = {
@@ -274,7 +274,7 @@ task.spawn(function()
         end
         
         if tick() - lastPrint > 10 then
-            print("[DEBUG] Owned: Sword="..tostring(hasClassicSword)..", Firebrand="..tostring(hasFirebrand).." | Equipped: "..tostring(currentEquippedSword))
+            print("owned: Sword="..tostring(hasClassicSword)..", firebrand="..tostring(hasFirebrand).." equipped: "..tostring(currentEquippedSword))
             lastPrint = tick()
         end
         task.wait(0.5)
@@ -1324,7 +1324,7 @@ task.spawn(function()
                                 return 
                             end
                         else
-                            print("[DEBUG] Sword button not found!")
+                            print("not found")
                         end
 
                         -- 2. Bee Upgrades (First 3)
@@ -1347,7 +1347,7 @@ task.spawn(function()
                                 end
                                 task.wait(1) -- Extra wait after each bee purchase to avoid UI spam/overlap
                             else
-                                print("[DEBUG] Unlock Bees Button not found!")
+                                print("not found")
                             end
                         end
 
@@ -1362,7 +1362,7 @@ task.spawn(function()
                                 return
                             end
                         else
-                            print("[DEBUG] Buy Firebrand button not found!")
+                            print("not found")
                         end
 
                         -- 4. 4th Bee (40 bricks)
@@ -1375,7 +1375,7 @@ task.spawn(function()
                                 return
                             end
                         else
-                            print("[DEBUG] 4th Bee button not found!")
+                            print("not found")
                         end
 
                         -- 5. Bee (55 bricks)
@@ -1475,7 +1475,7 @@ task.spawn(function()
                             task.wait(30)
                         end
                     else
-                        print("[DEBUG] TycoonButtons folder not found!")
+                        print("folder not found")
                     end
                 end)
 
