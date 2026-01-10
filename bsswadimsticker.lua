@@ -84,19 +84,38 @@ end
 
 -- Function to equip a specific tool
 local function equipTool(toolName)
-    if currentlyEquippedTool == toolName then return end -- Already equipped
-
-    pcall(function()
-        local args = {
-            [1] = {
-                ["Name"] = toolName
-            }
-        }
-        game:GetService("ReplicatedStorage").Events.PlayerActivesCommand:FireServer(unpack(args))
-        currentlyEquippedTool = toolName
-        print("Equipped: " .. toolName)
-    end)
-    task.wait(0.2) -- Small wait after equipping
+    if toolName == "Farming Tool" then
+        -- To equip the farming tool, we must unequip any currently held sword.
+        if currentlyEquippedTool == "Classic Sword" or currentlyEquippedTool == "Firebrand" then
+            local swordToUnequip = currentlyEquippedTool
+            pcall(function()
+                local args = {
+                    [1] = {
+                        ["Name"] = swordToUnequip
+                    }
+                }
+                game:GetService("ReplicatedStorage").Events.PlayerActivesCommand:FireServer(unpack(args))
+                currentlyEquippedTool = "Farming Tool"
+                print("Unequipped " .. swordToUnequip .. " to bring out Farming Tool")
+            end)
+            task.wait(0.2)
+        end
+    else
+        -- To equip a sword, only fire if it's not already held
+        if currentlyEquippedTool ~= toolName then
+            pcall(function()
+                local args = {
+                    [1] = {
+                        ["Name"] = toolName
+                    }
+                }
+                game:GetService("ReplicatedStorage").Events.PlayerActivesCommand:FireServer(unpack(args))
+                currentlyEquippedTool = toolName
+                print("Equipped: " .. toolName)
+            end)
+            task.wait(0.2)
+        end
+    end
 end
 
 -- Watcher: if Settings.InterruptAutoSlime is set, cancel active tweens and clear the flag
