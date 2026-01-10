@@ -37,7 +37,8 @@ local Settings = {
     AutoBuyBricks = false,
     InterruptAutoSlime = false,
     FarmPollen = false,
-    AutoToolSwitch = false
+    AutoToolSwitch = false,
+    KillAuraVisual = false
 }
 
 -- Global states for equipped/owned items
@@ -250,6 +251,7 @@ local function LoadConfig()
             if result.AutoBuyBricks ~= nil then Settings.AutoBuyBricks = result.AutoBuyBricks end
             if result.FarmPollen ~= nil then Settings.FarmPollen = result.FarmPollen end
             if result.AutoToolSwitch ~= nil then Settings.AutoToolSwitch = result.AutoToolSwitch end
+            if result.KillAuraVisual ~= nil then Settings.KillAuraVisual = result.KillAuraVisual end
         end
     end
 end
@@ -615,7 +617,7 @@ retroTab:CreateToggle({
 })
 
 retroTab:CreateToggle({
-    Name = "Auto Tool Switch (Farming/Slime)",
+    Name = "auto tool switch",
     CurrentValue = Settings.AutoToolSwitch,
     Flag = "AutoToolSwitch",
     Callback = function(Value)
@@ -623,6 +625,53 @@ retroTab:CreateToggle({
         SaveConfig()
     end,
 })
+
+retroTab:CreateToggle({
+    Name = "KillAura Visual (50 studs)",
+    CurrentValue = Settings.KillAuraVisual,
+    Flag = "KillAuraVisual",
+    Callback = function(Value)
+        Settings.KillAuraVisual = Value
+        SaveConfig()
+    end,
+})
+
+retroTab:CreateSection("Upgrades")
+
+local function teleportToUpgradePad(button)
+    local character = LocalPlayer.Character
+    if not character or not character:FindFirstChild("HumanoidRootPart") then return end
+    local hrp = character.HumanoidRootPart
+
+    pcall(function()
+        local oldCFrame = button.CFrame
+        button.CanCollide = false
+        button.CFrame = hrp.CFrame
+        task.wait(0.5)
+        button.CFrame = oldCFrame * CFrame.new(0, 50, 0)
+    end)
+end
+
+task.spawn(function()
+    -- Wait for the game and TycoonButtons to load
+    while not workspace:FindFirstChild("ClassicMinigame") or not workspace.ClassicMinigame:FindFirstChild("TycoonButtons") do
+        task.wait(1)
+    end
+
+    local tycoonButtons = workspace.ClassicMinigame.TycoonButtons
+
+    for _, child in ipairs(tycoonButtons:GetChildren()) do
+        local button = child:FindFirstChild("Button")
+        if button and button:IsA("BasePart") then
+            retroTab:CreateButton({
+                Name = child.Name,
+                Callback = function()
+                    teleportToUpgradePad(button)
+                end,
+            })
+        end
+    end
+end)
 
 -- TAB: Settings (Für Unload)
 local SettingsTab = Window:CreateTab("Settings", 4483362458)
@@ -638,6 +687,8 @@ SettingsTab:CreateButton({
 
         -- 3. UI zerstören
         if CooldownGui then CooldownGui:Destroy() end
+
+        -- KillAura Visuals clean up should happen via Loop 9 checking ScriptRunning
         
         print("Script unloaded successfully.")
     end,
@@ -1546,4 +1597,97 @@ task.spawn(function()
             task.wait(1)
         end
     end
+end)
+
+-- Loop 9: KillAura Visuals
+task.spawn(function()
+    local visualCircle = nil
+    local countGui = nil
+    local countLabel = nil
+
+    local function cleanup()
+        if visualCircle then visualCircle:Destroy() visualCircle = nil end
+        if countGui then countGui:Destroy() countGui = nil end
+    end
+
+    while ScriptRunning do
+        if Settings.KillAuraVisual and game.PlaceId == 17579225831 then
+            local character = LocalPlayer.Character
+            local hrp = character and character:FindFirstChild("HumanoidRootPart")
+
+            if hrp then
+                -- Circle setup
+                if not visualCircle or visualCircle.Parent ~= hrp then
+                    if visualCircle then visualCircle:Destroy() end
+                    visualCircle = Instance.new("CylinderHandleAdornment")
+                    visualCircle.Name = "KillAuraRange"
+                    visualCircle.Height = 0.1
+                    visualCircle.Radius = 50
+                    visualCircle.Color3 = Color3.fromRGB(255, 0, 0)
+                    visualCircle.Transparency = 0.7
+                    visualCircle.AlwaysOnTop = false
+                    visualCircle.ZIndex = 1
+                    visualCircle.Adornee = hrp
+                    visualCircle.CFrame = CFrame.Angles(math.rad(90), 0, 0)
+                    visualCircle.Parent = hrp
+                end
+
+                -- GUI setup
+                if not countGui or countGui.Parent ~= hrp then
+                    if countGui then countGui:Destroy() end
+                    countGui = Instance.new("BillboardGui")
+                    countGui.Name = "KillAuraCount"
+                    countGui.Size = UDim2.new(0, 100, 0, 50)
+                    countGui.StudsOffset = Vector3.new(0, 5, 0)
+                    countGui.AlwaysOnTop = true
+                    countGui.Adornee = hrp
+                    
+                    countLabel = Instance.new("TextLabel")
+                    countLabel.Size = UDim2.new(1, 0, 1, 0)
+                    countLabel.BackgroundTransparency = 1
+                    countLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+                    countLabel.TextStrokeTransparency = 0
+                    countLabel.TextSize = 20
+                    countLabel.Font = Enum.Font.SourceSansBold
+                    countLabel.Parent = countGui
+                    
+                    countGui.Parent = hrp
+                end
+
+                -- Counting enemies
+                local enemyCount = 0
+                if workspace:FindFirstChild("Monsters") then
+                    for _, monsterFolder in pairs(workspace.Monsters:GetChildren()) do
+                        local folderName = tostring(monsterFolder.Name)
+                        if folderName:match("^Zombie") or folderName:match("^Slime") then
+                            for _, desc in pairs(monsterFolder:GetDescendants()) do
+                                if desc:IsA("BasePart") and (desc.Name == "Torso" or desc.Name == "Blob2") then
+                                    local dist = (desc.Position - hrp.Position).Magnitude
+                                    if dist <= 50 then
+                                        enemyCount = enemyCount + 1
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+
+                countLabel.Text = "Enemies: " .. enemyCount
+                -- Change color based on if enemies are inside
+                if enemyCount > 0 then
+                    visualCircle.Color3 = Color3.fromRGB(255, 0, 0)
+                    countLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
+                else
+                    visualCircle.Color3 = Color3.fromRGB(0, 255, 0)
+                    countLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
+                end
+            else
+                cleanup()
+            end
+        else
+            cleanup()
+        end
+        task.wait(0.1)
+    end
+    cleanup()
 end)
