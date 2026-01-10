@@ -597,7 +597,7 @@ retroTab:CreateToggle({
 })
 
 retroTab:CreateToggle({
-    Name = "farm pollen (r0-6)",
+    Name = "farm pollen (r0-7)",
     CurrentValue = Settings.FarmPollen,
     Flag = "FarmPollen",
     Callback = function(Value)
@@ -1026,8 +1026,8 @@ task.spawn(function()
 
                     -- Nach Token-Sammeln: Falls keine Slimes gefunden, gehe zur Fallback Position
                     if not TargetSlimeBlob then
-                        if Settings.FarmPollen and CurrentRound >= 0 and CurrentRound <= 6 then
-                            -- Farm Pollen Logic for Rounds 0-6
+                        if Settings.FarmPollen and CurrentRound >= 0 and CurrentRound <= 7 then
+                            -- Farm Pollen Logic for Rounds 0-7
                             if currentEquippedSword ~= nil and tick() - lastEquipTime > 0.5 then
                                 EquipTool("FarmingTool")
                             end
