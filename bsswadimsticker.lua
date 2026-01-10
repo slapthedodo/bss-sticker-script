@@ -1057,7 +1057,7 @@ task.spawn(function()
                                         end
                                     end
                                 end
-                                if foundSlime or not Settings.AutoSlimeKill or not Settings.FarmPollen or CurrentRound > 6 then break end
+                                if foundSlime or not Settings.AutoSlimeKill or not Settings.FarmPollen or CurrentRound > 8 then break end
 
                                 local dist = (targetPos - HumanoidRootPart.Position).Magnitude
                                 local speed = 69
