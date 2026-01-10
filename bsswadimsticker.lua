@@ -257,27 +257,29 @@ LoadConfig()
 task.spawn(function()
     local lastPrint = 0
     while ScriptRunning do
-        hasFirebrand = LocalPlayer.Backpack:FindFirstChild("ClassicFirebrand") ~= nil or (LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("ClassicFirebrand") ~= nil)
-        hasClassicSword = (LocalPlayer.Backpack:FindFirstChild("ClassicSword") ~= nil or (LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("ClassicSword") ~= nil)) and not hasFirebrand
+        if game.PlaceId == 17579225831 then
+            hasFirebrand = LocalPlayer.Backpack:FindFirstChild("ClassicFirebrand") ~= nil or (LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("ClassicFirebrand") ~= nil)
+            hasClassicSword = (LocalPlayer.Backpack:FindFirstChild("ClassicSword") ~= nil or (LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("ClassicSword") ~= nil)) and not hasFirebrand
 
-        local equippedTool = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Tool")
-        if equippedTool then
-            if equippedTool.Name == "ClassicSword" then
-                currentEquippedSword = "ClassicSword"
-            elseif equippedTool.Name == "ClassicFirebrand" then
-                currentEquippedSword = "ClassicFirebrand"
+            local equippedTool = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Tool")
+            if equippedTool then
+                if equippedTool.Name == "ClassicSword" then
+                    currentEquippedSword = "ClassicSword"
+                elseif equippedTool.Name == "ClassicFirebrand" then
+                    currentEquippedSword = "ClassicFirebrand"
+                else
+                    currentEquippedSword = nil -- Farming tool or other
+                end
             else
-                currentEquippedSword = nil -- Farming tool or other
+                currentEquippedSword = nil -- No tool
             end
-        else
-            currentEquippedSword = nil -- No tool
+            
+            if tick() - lastPrint > 10 then
+                print("owned: Sword="..tostring(hasClassicSword)..", firebrand="..tostring(hasFirebrand).." equipped: "..tostring(currentEquippedSword))
+                lastPrint = tick()
+            end
+            task.wait(0.5)
         end
-        
-        if tick() - lastPrint > 10 then
-            print("owned: Sword="..tostring(hasClassicSword)..", firebrand="..tostring(hasFirebrand).." equipped: "..tostring(currentEquippedSword))
-            lastPrint = tick()
-        end
-        task.wait(0.5)
     end
 end)
 
@@ -597,7 +599,7 @@ retroTab:CreateToggle({
 })
 
 retroTab:CreateToggle({
-    Name = "farm pollen (r0-9)",
+    Name = "farm pollen (r0-8)",
     CurrentValue = Settings.FarmPollen,
     Flag = "FarmPollen",
     Callback = function(Value)
@@ -1026,8 +1028,8 @@ task.spawn(function()
 
                     -- Nach Token-Sammeln: Falls keine Slimes gefunden, gehe zur Fallback Position
                     if not TargetSlimeBlob then
-                        if Settings.FarmPollen and CurrentRound >= 0 and CurrentRound <= 9 then
-                            -- Farm Pollen Logic for Rounds 0-9
+                        if Settings.FarmPollen and CurrentRound >= 0 and CurrentRound <= 8 then
+                            -- Farm Pollen Logic for Rounds 0-8
                             if currentEquippedSword ~= nil and tick() - lastEquipTime > 0.5 then
                                 EquipTool("FarmingTool")
                             end
