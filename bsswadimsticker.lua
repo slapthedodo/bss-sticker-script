@@ -42,7 +42,8 @@ local Settings = {
 -- Global states for equipped/owned items
 local hasClassicSword = false
 local hasFirebrand = false
-local currentEquippedSword = nil -- Can be "ClassicSword", "Firebrand", or nil (for farming tool)
+local hasIllumina = false
+local currentEquippedSword = nil -- Can be "ClassicSword", "Firebrand", "Illumina", or nil (for farming tool)
 
 -- Active tween handles for AutoSlimeKill (accessible globally so UI can interrupt)
 local AutoSlime_activeTween = nil
@@ -76,9 +77,9 @@ local function EquipTool(toolName)
     local currentTool = character:FindFirstChildOfClass("Tool")
     
     if toolName == "FarmingTool" then
-        if currentTool and (currentTool.Name == "ClassicSword" or currentTool.Name == "ClassicFirebrand") then
+        if currentTool and (currentTool.Name == "ClassicSword" or currentTool.Name == "ClassicFirebrand" or currentTool.Name == "ClassicIllumina") then
             local oldName = currentTool.Name
-            local remoteName = (oldName == "ClassicSword" and "Sword") or (oldName == "ClassicFirebrand" and "Firebrand")
+            local remoteName = (oldName == "ClassicSword" and "Sword") or (oldName == "ClassicFirebrand" and "Firebrand") or (oldName == "ClassicIllumina" and "Illumina")
             print("unequipping " .. oldName .. " (Remote: " .. tostring(remoteName) .. ")")
             pcall(function()
                 local args = {
@@ -93,7 +94,7 @@ local function EquipTool(toolName)
             task.wait(0.2)
         end
     else -- Equip a sword
-        local remoteName = (toolName == "ClassicSword" and "Sword") or (toolName == "ClassicFirebrand" and "Firebrand")
+        local remoteName = (toolName == "ClassicSword" and "Sword") or (toolName == "ClassicFirebrand" and "Firebrand") or (toolName == "ClassicIllumina" and "Illumina")
         
         if currentTool and currentTool.Name == toolName then
             return -- Already equipped
@@ -258,8 +259,9 @@ task.spawn(function()
     local lastPrint = 0
     while ScriptRunning do
         if game.PlaceId == 17579225831 then
-            hasFirebrand = LocalPlayer.Backpack:FindFirstChild("ClassicFirebrand") ~= nil or (LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("ClassicFirebrand") ~= nil)
-            hasClassicSword = (LocalPlayer.Backpack:FindFirstChild("ClassicSword") ~= nil or (LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("ClassicSword") ~= nil)) and not hasFirebrand
+            hasIllumina = LocalPlayer.Backpack:FindFirstChild("ClassicIllumina") ~= nil or (LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("ClassicIllumina") ~= nil)
+            hasFirebrand = (LocalPlayer.Backpack:FindFirstChild("ClassicFirebrand") ~= nil or (LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("ClassicFirebrand") ~= nil)) and not hasIllumina
+            hasClassicSword = (LocalPlayer.Backpack:FindFirstChild("ClassicSword") ~= nil or (LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("ClassicSword") ~= nil)) and not (hasFirebrand or hasIllumina)
 
             local equippedTool = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Tool")
             if equippedTool then
@@ -267,6 +269,8 @@ task.spawn(function()
                     currentEquippedSword = "ClassicSword"
                 elseif equippedTool.Name == "ClassicFirebrand" then
                     currentEquippedSword = "ClassicFirebrand"
+                elseif equippedTool.Name == "ClassicIllumina" then
+                    currentEquippedSword = "ClassicIllumina"
                 else
                     currentEquippedSword = nil -- Farming tool or other
                 end
@@ -275,7 +279,7 @@ task.spawn(function()
             end
             
             if tick() - lastPrint > 10 then
-                print("owned: Sword="..tostring(hasClassicSword)..", firebrand="..tostring(hasFirebrand).." equipped: "..tostring(currentEquippedSword))
+                print("owned: Sword="..tostring(hasClassicSword)..", firebrand="..tostring(hasFirebrand)..", illumina="..tostring(hasIllumina).." equipped: "..tostring(currentEquippedSword))
                 lastPrint = tick()
             end
             task.wait(0.5)
@@ -1165,7 +1169,10 @@ task.spawn(function()
                             cancelActiveAutoSlime()
 
                             -- Equip sword before tweening to monster
-                            if hasFirebrand and currentEquippedSword ~= "ClassicFirebrand" and tick() - lastEquipTime > 0.5 then
+                            if hasIllumina and currentEquippedSword ~= "ClassicIllumina" and tick() - lastEquipTime > 0.5 then
+                                EquipTool("ClassicIllumina")
+                                task.wait(0.1)
+                            elseif hasFirebrand and currentEquippedSword ~= "ClassicFirebrand" and tick() - lastEquipTime > 0.5 then
                                 EquipTool("ClassicFirebrand")
                                 task.wait(0.1)
                             elseif hasClassicSword and currentEquippedSword ~= "ClassicSword" and tick() - lastEquipTime > 0.5 then
@@ -1200,7 +1207,9 @@ task.spawn(function()
                             AutoSlime_activePlatTween = nil
                         end
                     else
-                        if hasFirebrand and currentEquippedSword ~= "ClassicFirebrand" and tick() - lastEquipTime > 0.5 then
+                        if hasIllumina and currentEquippedSword ~= "ClassicIllumina" and tick() - lastEquipTime > 0.5 then
+                            EquipTool("ClassicIllumina")
+                        elseif hasFirebrand and currentEquippedSword ~= "ClassicFirebrand" and tick() - lastEquipTime > 0.5 then
                             EquipTool("ClassicFirebrand")
                         elseif hasClassicSword and currentEquippedSword ~= "ClassicSword" and tick() - lastEquipTime > 0.5 then
                             EquipTool("ClassicSword")
