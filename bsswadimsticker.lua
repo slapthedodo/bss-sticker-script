@@ -38,7 +38,8 @@ local Settings = {
     InterruptAutoSlime = false,
     FarmPollen = false,
     AutoToolSwitch = false,
-    KillAuraVisual = false
+    KillAuraVisual = false,
+    KillAuraRange = 50
 }
 
 -- Global states for equipped/owned items
@@ -252,6 +253,7 @@ local function LoadConfig()
             if result.FarmPollen ~= nil then Settings.FarmPollen = result.FarmPollen end
             if result.AutoToolSwitch ~= nil then Settings.AutoToolSwitch = result.AutoToolSwitch end
             if result.KillAuraVisual ~= nil then Settings.KillAuraVisual = result.KillAuraVisual end
+            if result.KillAuraRange ~= nil then Settings.KillAuraRange = result.KillAuraRange end
         end
     end
 end
@@ -632,6 +634,19 @@ retroTab:CreateToggle({
     Flag = "KillAuraVisual",
     Callback = function(Value)
         Settings.KillAuraVisual = Value
+        SaveConfig()
+    end,
+})
+
+retroTab:CreateSlider({
+    Name = "KillAura Range",
+    Range = {5, 80},
+    Increment = 1,
+    Suffix = "studs",
+    CurrentValue = Settings.KillAuraRange,
+    Flag = "KillAuraRange",
+    Callback = function(Value)
+        Settings.KillAuraRange = Value
         SaveConfig()
     end,
 })
@@ -1479,7 +1494,8 @@ task.spawn(function()
                         end
 
                         -- 7. Illumina (1500 bricks)
-                        local illuminaBtn = tycoonButtons:FindFirstChild("Buy Illumina")
+                        local illuminaBtnFolder = tycoonButtons:FindFirstChild("Buy Illumina")
+                        local illuminaBtn = illuminaBtnFolder and illuminaBtnFolder:FindFirstChild("Button")
                         if illuminaBtn then
                             local bought = handleButton(illuminaBtn, 1500, "Illumina", false)
                             if not bought then
@@ -1601,12 +1617,13 @@ end)
 
 -- Loop 9: KillAura Visuals
 task.spawn(function()
-    local visualCircle = nil
+    local visualPart = nil
+    local ringStroke = nil
     local countGui = nil
     local countLabel = nil
 
     local function cleanup()
-        if visualCircle then visualCircle:Destroy() visualCircle = nil end
+        if visualPart then visualPart:Destroy() visualPart = nil end
         if countGui then countGui:Destroy() countGui = nil end
     end
 
@@ -1616,21 +1633,46 @@ task.spawn(function()
             local hrp = character and character:FindFirstChild("HumanoidRootPart")
 
             if hrp then
-                -- Circle setup
-                if not visualCircle or visualCircle.Parent ~= hrp then
-                    if visualCircle then visualCircle:Destroy() end
-                    visualCircle = Instance.new("CylinderHandleAdornment")
-                    visualCircle.Name = "KillAuraRange"
-                    visualCircle.Height = 0.1
-                    visualCircle.Radius = 50
-                    visualCircle.Color3 = Color3.fromRGB(255, 0, 0)
-                    visualCircle.Transparency = 0.7
-                    visualCircle.AlwaysOnTop = false
-                    visualCircle.ZIndex = 1
-                    visualCircle.Adornee = hrp
-                    visualCircle.CFrame = CFrame.Angles(math.rad(90), 0, 0)
-                    visualCircle.Parent = hrp
+                -- Visual Part & Ring setup
+                if not visualPart or not visualPart.Parent then
+                    visualPart = Instance.new("Part")
+                    visualPart.Name = "KillAuraVisualPart"
+                    visualPart.Anchored = true
+                    visualPart.CanCollide = false
+                    visualPart.CanTouch = false
+                    visualPart.CanQuery = false
+                    visualPart.Transparency = 1
+                    visualPart.Size = Vector3.new(1, 0.1, 1)
+                    visualPart.Parent = workspace
+
+                    local sg = Instance.new("SurfaceGui")
+                    sg.Face = Enum.NormalId.Top
+                    sg.AlwaysOnTop = false
+                    sg.Parent = visualPart
+
+                    local frame = Instance.new("Frame")
+                    frame.Size = UDim2.new(1, 0, 1, 0)
+                    frame.BackgroundTransparency = 1
+                    frame.Parent = sg
+
+                    local corner = Instance.new("UICorner")
+                    corner.CornerRadius = UDim.new(1, 0)
+                    corner.Parent = frame
+
+                    ringStroke = Instance.new("UIStroke")
+                    ringStroke.Thickness = 3
+                    ringStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+                    ringStroke.Color = Color3.fromRGB(0, 255, 0)
+                    ringStroke.Parent = frame
                 end
+
+                -- Update Visual Part Position & Size (Stay flat on ground or at fixed height)
+                local currentRange = Settings.KillAuraRange
+                visualPart.Size = Vector3.new(currentRange * 2, 0.1, currentRange * 2)
+                
+                -- Stay at player's X/Z but fixed Y or ground level
+                local targetY = hrp.Position.Y - 3 -- Slightly below player
+                visualPart.CFrame = CFrame.new(hrp.Position.X, targetY, hrp.Position.Z)
 
                 -- GUI setup
                 if not countGui or countGui.Parent ~= hrp then
@@ -1663,7 +1705,7 @@ task.spawn(function()
                             for _, desc in pairs(monsterFolder:GetDescendants()) do
                                 if desc:IsA("BasePart") and (desc.Name == "Torso" or desc.Name == "Blob2") then
                                     local dist = (desc.Position - hrp.Position).Magnitude
-                                    if dist <= 50 then
+                                    if dist <= currentRange then
                                         enemyCount = enemyCount + 1
                                     end
                                 end
@@ -1675,10 +1717,10 @@ task.spawn(function()
                 countLabel.Text = "Enemies: " .. enemyCount
                 -- Change color based on if enemies are inside
                 if enemyCount > 0 then
-                    visualCircle.Color3 = Color3.fromRGB(255, 0, 0)
+                    ringStroke.Color = Color3.fromRGB(255, 0, 0)
                     countLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
                 else
-                    visualCircle.Color3 = Color3.fromRGB(0, 255, 0)
+                    ringStroke.Color = Color3.fromRGB(0, 255, 0)
                     countLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
                 end
             else
