@@ -42,7 +42,9 @@ local Settings = {
     KillAuraRange = 50,
     KillAuraTrigger = 5,
     KillAuraCooldown = 3,
-    BloomLevel = 5
+    BloomLevel = 5,
+    CameraMaxZoomDistance = 128,
+    MaxAxisFieldOfView = 70
 }
 
 -- Global states for equipped/owned items
@@ -266,6 +268,8 @@ local function LoadConfig()
             if result.KillAuraTrigger ~= nil then Settings.KillAuraTrigger = result.KillAuraTrigger end
             if result.KillAuraCooldown ~= nil then Settings.KillAuraCooldown = result.KillAuraCooldown end
             if result.BloomLevel ~= nil then Settings.BloomLevel = result.BloomLevel end
+            if result.CameraMaxZoomDistance ~= nil then Settings.CameraMaxZoomDistance = result.CameraMaxZoomDistance end
+            if result.MaxAxisFieldOfView ~= nil then Settings.MaxAxisFieldOfView = result.MaxAxisFieldOfView end
         end
     end
 end
@@ -684,8 +688,8 @@ retroTab:CreateSlider({
 
 retroTab:CreateSlider({
     Name = "killaura cooldown",
-    Range = {2, 10},
-    Increment = 1,
+    Range = {0.2, 6},
+    Increment = 0.1,
     Suffix = "seconds",
     CurrentValue = Settings.KillAuraCooldown,
     Flag = "KillAuraCooldown",
@@ -744,6 +748,40 @@ task.spawn(function()
         end
     end
 end)
+
+retroTab:CreateSection("cam")
+
+retroTab:CreateSlider({
+    Name = "max zoom",
+    Range = {10, 1000},
+    Increment = 10,
+    Suffix = "studs",
+    CurrentValue = Settings.CameraMaxZoomDistance,
+    Flag = "CameraMaxZoomDistance",
+    Callback = function(Value)
+        Settings.CameraMaxZoomDistance = Value
+        LocalPlayer.CameraMaxZoomDistance = Value
+        SaveConfig()
+    end,
+})
+
+retroTab:CreateSlider({
+    Name = "MaxAxisFOV",
+    Range = {30, 120},
+    Increment = 1,
+    Suffix = "deg",
+    CurrentValue = Settings.MaxAxisFieldOfView,
+    Flag = "MaxAxisFieldOfView",
+    Callback = function(Value)
+        Settings.MaxAxisFieldOfView = Value
+        pcall(function()
+            if workspace.CurrentCamera then
+                workspace.CurrentCamera.MaxAxisFieldOfView = Value
+            end
+        end)
+        SaveConfig()
+    end,
+})
 
 -- TAB: Settings (Für Unload)
 local SettingsTab = Window:CreateTab("Settings", 4483362458)
@@ -1224,62 +1262,70 @@ task.spawn(function()
                             end
 
                             local bloomPos = targetBloom.Position
-                            -- Wir nutzen die Bloom Y-Position für das Tweening
-                            local targetPos = Vector3.new(bloomPos.X, bloomPos.Y + 3, bloomPos.Z)
+                            local bloomHeight = 290 -- Einheitliche Höhe für diesen Bloom
                             
-                            local dist = (targetPos - HumanoidRootPart.Position).Magnitude
-                            local speed = 69
-                            local duration = dist / speed
-                            local targetCFrame = CFrame.new(targetPos) * upRotation
-                            
-                            if tick() >= AutoSlime_blockUntil then
-                                cancelActiveAutoSlime()
-                                local tween = TweenService:Create(HumanoidRootPart, TweenInfo.new(duration, Enum.EasingStyle.Linear), {CFrame = targetCFrame})
-                                local platTween = TweenService:Create(platform, TweenInfo.new(duration, Enum.EasingStyle.Linear), {CFrame = CFrame.new(targetPos - Vector3.new(0, 3, 0))})
+                            -- 1. Nur zum Zentrum fliegen & Sprinkler platzieren, wenn es ein NEUER Bloom ist
+                            if targetBloom ~= lastBloom then
+                                lastBloom = targetBloom
+                                local targetPos = Vector3.new(bloomPos.X, bloomHeight, bloomPos.Z)
+                                local dist = (targetPos - HumanoidRootPart.Position).Magnitude
+                                local speed = 69
+                                local duration = dist / speed
+                                local targetCFrame = CFrame.new(targetPos) * upRotation
                                 
-                                tween:Play()
-                                platTween:Play()
-                                AutoSlime_activeTween = tween
-                                AutoSlime_activePlatTween = platTween
-                                
-                                AutoSlime_activeConn = game:GetService("RunService").Heartbeat:Connect(function()
-                                    if not Settings.AutoSlimeKill or not AutoSlime_activeTween or game.PlaceId ~= 17579225831 then
-                                        if AutoSlime_activeConn then AutoSlime_activeConn:Disconnect() AutoSlime_activeConn = nil end
-                                        return
-                                    end
-                                    HumanoidRootPart.AssemblyLinearVelocity = Vector3.zero
-                                    HumanoidRootPart.AssemblyAngularVelocity = Vector3.zero
-                                    if platform and platform:IsA("BasePart") then
-                                        platform.AssemblyLinearVelocity = Vector3.zero
-                                        platform.AssemblyAngularVelocity = Vector3.zero
-                                    end
-                                end)
-                                
-                                tween.Completed:Wait()
-                                if AutoSlime_activeConn then AutoSlime_activeConn:Disconnect() AutoSlime_activeConn = nil end
-                                AutoSlime_activeTween = nil
-                                AutoSlime_activePlatTween = nil
+                                if tick() >= AutoSlime_blockUntil then
+                                    cancelActiveAutoSlime()
+                                    local tween = TweenService:Create(HumanoidRootPart, TweenInfo.new(duration, Enum.EasingStyle.Linear), {CFrame = targetCFrame})
+                                    local platTween = TweenService:Create(platform, TweenInfo.new(duration, Enum.EasingStyle.Linear), {CFrame = CFrame.new(targetPos - Vector3.new(0, 3, 0))})
+                                    
+                                    tween:Play()
+                                    platTween:Play()
+                                    AutoSlime_activeTween = tween
+                                    AutoSlime_activePlatTween = platTween
+                                    
+                                    AutoSlime_activeConn = game:GetService("RunService").Heartbeat:Connect(function()
+                                        if not Settings.AutoSlimeKill or not AutoSlime_activeTween or game.PlaceId ~= 17579225831 then
+                                            if AutoSlime_activeConn then AutoSlime_activeConn:Disconnect() AutoSlime_activeConn = nil end
+                                            return
+                                        end
+                                        HumanoidRootPart.AssemblyLinearVelocity = Vector3.zero
+                                        HumanoidRootPart.AssemblyAngularVelocity = Vector3.zero
+                                        if platform and platform:IsA("BasePart") then
+                                            platform.AssemblyLinearVelocity = Vector3.zero
+                                            platform.AssemblyAngularVelocity = Vector3.zero
+                                        end
+                                    end)
+                                    
+                                    tween.Completed:Wait()
+                                    if AutoSlime_activeConn then AutoSlime_activeConn:Disconnect() AutoSlime_activeConn = nil end
+                                    AutoSlime_activeTween = nil
+                                    AutoSlime_activePlatTween = nil
 
-                                -- 1. Planter (Sprinkler) platzieren (nur beim ersten Mal für diesen Bloom)
-                                if targetBloom ~= lastBloom then
-                                    lastBloom = targetBloom
+                                    -- Sprinkler platzieren
                                     pcall(function()
                                         local args = {[1] = {["Name"] = "Sprinkler Builder"}}
                                         game:GetService("ReplicatedStorage").Events.PlayerActivesCommand:FireServer(unpack(args))
                                     end)
                                     task.wait(0.2)
                                 end
+                            end
 
-                                -- 2. Im Viereck rumrennen
+                            -- 2. Im Viereck rumrennen (Jede Umdrehung)
+                            if tick() >= AutoSlime_blockUntil then
                                 local offset = 12
                                 local squarePoints = {
-                                    Vector3.new(bloomPos.X + offset, 290, bloomPos.Z + offset),
-                                    Vector3.new(bloomPos.X - offset, 290, bloomPos.Z + offset),
-                                    Vector3.new(bloomPos.X - offset, 290, bloomPos.Z - offset),
-                                    Vector3.new(bloomPos.X + offset, 290, bloomPos.Z - offset)
+                                    Vector3.new(bloomPos.X + offset, bloomHeight, bloomPos.Z + offset),
+                                    Vector3.new(bloomPos.X - offset, bloomHeight, bloomPos.Z + offset),
+                                    Vector3.new(bloomPos.X - offset, bloomHeight, bloomPos.Z - offset),
+                                    Vector3.new(bloomPos.X + offset, bloomHeight, bloomPos.Z - offset)
                                 }
 
                                 for _, p in ipairs(squarePoints) do
+                                    -- Ensure FarmingTool is equipped during bloom square movement
+                                    if Settings.AutoToolSwitch and currentEquippedSword ~= nil and tick() - lastEquipTime > 0.5 then
+                                        EquipTool("FarmingTool")
+                                    end
+
                                     -- Abbruch falls Slime erscheint oder Toggle aus
                                     local foundSlime = false
                                     if workspace:FindFirstChild("Monsters") then
@@ -2156,4 +2202,17 @@ task.spawn(function()
         task.wait()
     end
     cleanup()
+end)
+
+-- Loop 10: Camera Settings Persistence
+task.spawn(function()
+    while ScriptRunning do
+        pcall(function()
+            LocalPlayer.CameraMaxZoomDistance = Settings.CameraMaxZoomDistance
+            if workspace.CurrentCamera then
+                workspace.CurrentCamera.MaxAxisFieldOfView = Settings.MaxAxisFieldOfView
+            end
+        end)
+        task.wait(1)
+    end
 end)
