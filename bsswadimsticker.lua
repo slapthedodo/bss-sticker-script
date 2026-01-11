@@ -314,7 +314,13 @@ task.spawn(function()
                 and screenGui.UnderPopUpFrame:FindFirstChild("RetroGuiTopMenu")
                 and screenGui.UnderPopUpFrame.RetroGuiTopMenu:FindFirstChild("TopMenuFrame2")
                 and screenGui.UnderPopUpFrame.RetroGuiTopMenu.TopMenuFrame2:FindFirstChild("BrickLabel")
-            CurrentBricks = tonumber(brickLabel and brickLabel.Text) or 0
+            
+            if brickLabel and brickLabel.Text then
+                local text = brickLabel.Text:gsub("%D", "") -- Entferne alles außer Ziffern (z.B. Kommas)
+                CurrentBricks = tonumber(text) or 0
+            else
+                CurrentBricks = 0
+            end
         end)
         task.wait(1)
     end
@@ -741,7 +747,7 @@ SettingsTab:CreateButton({
 
         -- KillAura Visuals clean up should happen via Loop 9 checking ScriptRunning
         
-        print("Script unloaded successfully.")
+        print("unloaded")
     end,
 })
 
@@ -876,7 +882,7 @@ task.spawn(function()
                     for _, value in ipairs(claimValues) do
                         pcall(function()
                             ReplicatedStorage.Events.ClaimHive:FireServer(value)
-                            print("ClaimHive " .. value)
+                            print("hive claim " .. value)
                         end)
                         task.wait(1)
                     end
@@ -1853,8 +1859,6 @@ task.spawn(function()
                             end
                         end
 
-                        print("Killaura: Starte Sequenz für " .. #enemiesToHit .. " Gegner")
-
                         -- Heartbeat connection for the whole session to prevent falling and movement
                         local ka_conn = game:GetService("RunService").Heartbeat:Connect(function()
                             if hrp and hrp.Parent then
@@ -1899,7 +1903,7 @@ task.spawn(function()
                                 local speed = 120
                                 local duration = math.max(0.05, dist / speed)
 
-                                print("Killaura: Gehe zu Gegner " .. i .. "/" .. #enemiesToHit .. " (Distanz: " .. math.floor(dist) .. ")")
+                                print(" " .. i .. "/" .. #enemiesToHit .. " " .. math.floor(dist) .. ")")
 
                                 -- Equip sword if tool switch is on
                                 if Settings.AutoToolSwitch then
@@ -1943,8 +1947,6 @@ task.spawn(function()
                                 end
                             end
                         end
-                        
-                        print("Killaura: Sequenz beendet")
                         task.wait(0.2)
                         
                         -- Clear markers
