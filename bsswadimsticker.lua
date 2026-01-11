@@ -999,7 +999,9 @@ task.spawn(function()
                     for _, monsterFolder in pairs(workspace.Monsters:GetChildren()) do
                         local folderName = tostring(monsterFolder.Name)
                         -- Match any Zombie or Slime regardless of level
-                        if folderName:match("^Zombie") or folderName:match("^Slime") then
+                        local isSlime = folderName:match("^Slime")
+                        local slimeLvl = isSlime and tonumber(folderName:match("Lvl%s+(%d+)"))
+                        if (folderName:match("^Zombie") or isSlime) and (not slimeLvl or slimeLvl < 22) then
                             -- Suche direkt alle Nachkommen im Folder
                             for _, desc in pairs(monsterFolder:GetDescendants()) do
                                 if desc:IsA("BasePart") then
@@ -1045,7 +1047,9 @@ task.spawn(function()
                                 for _, monsterFolder in pairs(workspace.Monsters:GetChildren()) do
                                     local folderName = tostring(monsterFolder.Name)
                                     -- Match any Zombie or Slime regardless of level
-                                    if folderName:match("^Zombie") or folderName:match("^Slime") then
+                                    local isSlime = folderName:match("^Slime")
+                                    local slimeLvl = isSlime and tonumber(folderName:match("Lvl%s+(%d+)"))
+                                    if (folderName:match("^Zombie") or isSlime) and (not slimeLvl or slimeLvl < 22) then
                                         -- Suche direkt alle Nachkommen im Folder
                                         for _, desc in pairs(monsterFolder:GetDescendants()) do
                                             if desc:IsA("BasePart") then
@@ -1273,7 +1277,9 @@ task.spawn(function()
                                     if workspace:FindFirstChild("Monsters") then
                                         for _, monsterFolder in pairs(workspace.Monsters:GetChildren()) do
                                             local folderName = tostring(monsterFolder.Name)
-                                            if folderName:match("^Zombie") or folderName:match("^Slime") then
+                                            local isSlime = folderName:match("^Slime")
+                                            local slimeLvl = isSlime and tonumber(folderName:match("Lvl%s+(%d+)"))
+                                            if (folderName:match("^Zombie") or isSlime) and (not slimeLvl or slimeLvl < 22) then
                                                 foundSlime = true
                                                 break
                                             end
@@ -1334,7 +1340,9 @@ task.spawn(function()
                                 if workspace:FindFirstChild("Monsters") then
                                     for _, monsterFolder in pairs(workspace.Monsters:GetChildren()) do
                                         local folderName = tostring(monsterFolder.Name)
-                                        if folderName:match("^Zombie") or folderName:match("^Slime") then
+                                        local isSlime = folderName:match("^Slime")
+                                        local slimeLvl = isSlime and tonumber(folderName:match("Lvl%s+(%d+)"))
+                                        if (folderName:match("^Zombie") or isSlime) and (not slimeLvl or slimeLvl < 22) then
                                             foundSlime = true
                                             break
                                         end
@@ -1928,7 +1936,9 @@ task.spawn(function()
                     if workspace:FindFirstChild("Monsters") then
                         for _, monsterFolder in pairs(workspace.Monsters:GetChildren()) do
                             local folderName = tostring(monsterFolder.Name)
-                            if folderName:match("^Zombie") or folderName:match("^Slime") then
+                            local isSlime = folderName:match("^Slime")
+                            local slimeLvl = isSlime and tonumber(folderName:match("Lvl%s+(%d+)"))
+                            if (folderName:match("^Zombie") or isSlime) and (not slimeLvl or slimeLvl < 22) then
                                 for _, desc in pairs(monsterFolder:GetDescendants()) do
                                     if desc:IsA("BasePart") and (desc.Name == "Torso" or desc.Name == "Blob2") then
                                         local dist = (desc.Position - hrp.Position).Magnitude
