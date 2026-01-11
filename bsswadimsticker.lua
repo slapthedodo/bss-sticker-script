@@ -1498,7 +1498,7 @@ task.spawn(function()
                         end
 
                         -- 6. Bloxiade (100 bricks)
-                        local bloxiadeBtnFolder = tycoonButtons:FindFirstChild("Buy Bloxiade")
+                        local bloxiadeBtnFolder = tycoonButtons:FindFirstChild("Buy Bloxiade") or tycoonButtons:FindFirstChild("Buy Bloxiade Button")
                         local bloxiadeBtn = bloxiadeBtnFolder and bloxiadeBtnFolder:FindFirstChild("Button")
                         if bloxiadeBtn then
                             local bought = handleButton(bloxiadeBtn, 100, "Bloxiade", false)
@@ -1509,7 +1509,7 @@ task.spawn(function()
                         end
 
                         -- 7. Illumina (1500 bricks)
-                        local illuminaBtnFolder = tycoonButtons:FindFirstChild("Buy Illumina")
+                        local illuminaBtnFolder = tycoonButtons:FindFirstChild("Buy Illumina") or tycoonButtons:FindFirstChild("Buy Illumina Button")
                         local illuminaBtn = illuminaBtnFolder and illuminaBtnFolder:FindFirstChild("Button")
                         if illuminaBtn then
                             local bought = handleButton(illuminaBtn, 1500, "Illumina", false)
@@ -1518,11 +1518,20 @@ task.spawn(function()
                                 return
                             end
                         else
-                            print("Illumina button not found.")
+                            -- Try searching by name if direct child not found
+                            for _, v in pairs(tycoonButtons:GetChildren()) do
+                                if v.Name:find("Illumina") then
+                                    local b = v:FindFirstChild("Button")
+                                    if b then
+                                        handleButton(b, 1500, "Illumina", false)
+                                        break
+                                    end
+                                end
+                            end
                         end
 
                         -- 8. Bloxy Cola (200 bricks)
-                        local colaBtnFolder = tycoonButtons:FindFirstChild("Buy Bloxy Cola")
+                        local colaBtnFolder = tycoonButtons:FindFirstChild("Buy Bloxy Cola") or tycoonButtons:FindFirstChild("Buy Bloxy Cola Button")
                         local colaBtn = colaBtnFolder and colaBtnFolder:FindFirstChild("Button")
                         if colaBtn then
                             local bought = handleButton(colaBtn, 200, "Bloxy Cola", false)
@@ -1533,7 +1542,7 @@ task.spawn(function()
                         end
 
                         -- 9. Chez Burger (300 bricks)
-                        local burgerBtnFolder = tycoonButtons:FindFirstChild("Buy Chez Burger")
+                        local burgerBtnFolder = tycoonButtons:FindFirstChild("Buy Chez Burger") or tycoonButtons:FindFirstChild("Buy Chez Burger Button")
                         local burgerBtn = burgerBtnFolder and burgerBtnFolder:FindFirstChild("Button")
                         if burgerBtn then
                             local bought = handleButton(burgerBtn, 300, "Chez Burger", false)
@@ -1544,7 +1553,7 @@ task.spawn(function()
                         end
 
                         -- 10. Pizza (500 bricks)
-                        local pizzaBtnFolder = tycoonButtons:FindFirstChild("Buy Pizza")
+                        local pizzaBtnFolder = tycoonButtons:FindFirstChild("Buy Pizza") or tycoonButtons:FindFirstChild("Buy Pizza Button")
                         local pizzaBtn = pizzaBtnFolder and pizzaBtnFolder:FindFirstChild("Button")
                         if pizzaBtn then
                             local bought = handleButton(pizzaBtn, 500, "Pizza", false)
@@ -1636,10 +1645,15 @@ task.spawn(function()
     local ringStroke = nil
     local countGui = nil
     local countLabel = nil
+    local activeMarkers = {}
 
     local function cleanup()
         if visualPart then visualPart:Destroy() visualPart = nil end
         if countGui then countGui:Destroy() countGui = nil end
+        for monster, marker in pairs(activeMarkers) do
+            if marker then pcall(function() marker:Destroy() end) end
+        end
+        activeMarkers = {}
     end
 
     while ScriptRunning do
@@ -1713,6 +1727,7 @@ task.spawn(function()
 
                 -- Counting enemies
                 local enemyCount = 0
+                local currentEnemies = {}
                 if workspace:FindFirstChild("Monsters") then
                     for _, monsterFolder in pairs(workspace.Monsters:GetChildren()) do
                         local folderName = tostring(monsterFolder.Name)
@@ -1722,10 +1737,32 @@ task.spawn(function()
                                     local dist = (desc.Position - hrp.Position).Magnitude
                                     if dist <= currentRange then
                                         enemyCount = enemyCount + 1
+                                        local monster = monsterFolder
+                                        currentEnemies[monster] = true
+                                        
+                                        if not activeMarkers[monster] then
+                                            pcall(function()
+                                                local h = Instance.new("Highlight")
+                                                h.FillColor = Color3.fromRGB(255, 0, 0)
+                                                h.OutlineColor = Color3.fromRGB(255, 255, 255)
+                                                h.FillTransparency = 0.5
+                                                h.Adornee = monster
+                                                h.Parent = monster
+                                                activeMarkers[monster] = h
+                                            end)
+                                        end
                                     end
                                 end
                             end
                         end
+                    end
+                end
+
+                -- Remove markers for enemies no longer in range
+                for monster, marker in pairs(activeMarkers) do
+                    if not currentEnemies[monster] or not monster.Parent then
+                        if marker then pcall(function() marker:Destroy() end) end
+                        activeMarkers[monster] = nil
                     end
                 end
 
@@ -1745,7 +1782,7 @@ task.spawn(function()
         else
             cleanup()
         end
-        task.wait(.02)
+        task.wait()
     end
     cleanup()
 end)
