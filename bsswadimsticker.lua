@@ -1837,7 +1837,7 @@ task.spawn(function()
                                 local targetPos = targetPart.Position
                                 local adjustedTarget = Vector3.new(targetPos.X, targetY, targetPos.Z)
                                 local dist = (adjustedTarget - hrp.Position).Magnitude
-                                local speed = 150 -- Faster for KillAura
+                                local speed = 70 -- Faster for KillAura
                                 local duration = math.max(0.1, dist / speed)
 
                                 -- Equip sword if tool switch is on
