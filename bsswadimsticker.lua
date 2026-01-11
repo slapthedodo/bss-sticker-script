@@ -1267,21 +1267,30 @@ task.spawn(function()
                             end
                         end)
 
-                        if targetBloom then
+                        if targetBloom and targetBloom.Parent then
                             -- Bloom gefunden!
-                            if Settings.AutoToolSwitch and currentEquippedSword ~= nil and tick() - lastEquipTime > 0.5 then
-                                EquipTool("FarmingTool")
+                            local bloomPos = nil
+                            local successPos, result = pcall(function() return targetBloom.Position end)
+                            if successPos and typeof(result) == "Vector3" then
+                                bloomPos = result
+                            else
+                                targetBloom = nil
+                                lastBloom = nil
                             end
 
-                            local bloomPos = targetBloom.Position
-                            local bloomHeight = 290 -- Einheitliche Höhe für diesen Bloom
-                            
-                            -- 1. Nur zum Zentrum fliegen & Sprinkler platzieren, wenn es ein NEUER Bloom ist
-                            if targetBloom ~= lastBloom then
-                                lastBloom = targetBloom
-                                local targetPos = Vector3.new(bloomPos.X, bloomHeight, bloomPos.Z)
-                                local dist = (targetPos - HumanoidRootPart.Position).Magnitude
+                            if targetBloom and bloomPos then
+                                if Settings.AutoToolSwitch and currentEquippedSword ~= nil and tick() - lastEquipTime > 0.5 then
+                                    EquipTool("FarmingTool")
+                                end
+
+                                local bloomHeight = 290 -- Einheitliche Höhe für diesen Bloom
                                 local speed = 69
+                                
+                                -- 1. Nur zum Zentrum fliegen & Sprinkler platzieren, wenn es ein NEUER Bloom ist
+                                if targetBloom ~= lastBloom then
+                                    lastBloom = targetBloom
+                                    local targetPos = Vector3.new(bloomPos.X, bloomHeight, bloomPos.Z)
+                                local dist = (targetPos - HumanoidRootPart.Position).Magnitude
                                 local duration = dist / speed
                                 local targetCFrame = CFrame.new(targetPos) * upRotation
                                 
@@ -1338,7 +1347,7 @@ task.spawn(function()
                                         EquipTool("FarmingTool")
                                     end
 
-                                    -- Abbruch falls Slime erscheint oder Toggle aus
+                                    -- Abbruch falls Slime erscheint, Toggle aus oder Bloom weg
                                     local foundSlime = false
                                     if workspace:FindFirstChild("Monsters") then
                                         for _, monsterFolder in pairs(workspace.Monsters:GetChildren()) do
@@ -1351,7 +1360,15 @@ task.spawn(function()
                                             end
                                         end
                                     end
-                                    if foundSlime or not Settings.AutoSlimeKill then break end
+
+                                    local bloomExists = false
+                                    pcall(function()
+                                        if targetBloom and targetBloom.Parent then
+                                            bloomExists = true
+                                        end
+                                    end)
+
+                                    if foundSlime or not Settings.AutoSlimeKill or not bloomExists then break end
 
                                     local d = (p - HumanoidRootPart.Position).Magnitude
                                     local dur = d / speed
