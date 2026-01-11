@@ -1837,11 +1837,13 @@ task.spawn(function()
 
                         print("Killaura: Starte Sequenz für " .. #enemiesToHit .. " Gegner")
 
-                        -- Heartbeat connection for the whole session to prevent falling
+                        -- Heartbeat connection for the whole session to prevent falling and movement
                         local ka_conn = game:GetService("RunService").Heartbeat:Connect(function()
                             if hrp and hrp.Parent then
                                 hrp.AssemblyLinearVelocity = Vector3.zero
                                 hrp.AssemblyAngularVelocity = Vector3.zero
+                                -- Ensure height stays locked even if tween is not running
+                                hrp.CFrame = CFrame.new(hrp.Position.X, targetY, hrp.Position.Z) * upRotation
                             end
                             if ka_platform and ka_platform.Parent then
                                 ka_platform.AssemblyLinearVelocity = Vector3.zero
@@ -1853,6 +1855,9 @@ task.spawn(function()
                                 end
                             end)
                         end)
+
+                        -- Give a small moment for AutoSlimeKill to fully yield
+                        task.wait(0.1)
 
                         for i, monster in ipairs(enemiesToHit) do
                             if not ScriptRunning or not Settings.KillAuraVisual then
@@ -1869,9 +1874,14 @@ task.spawn(function()
                             if targetPart then
                                 local targetPos = targetPart.Position
                                 local adjustedTarget = Vector3.new(targetPos.X, targetY, targetPos.Z)
-                                local dist = (adjustedTarget - hrp.Position).Magnitude
+                                
+                                -- Use current position for distance
+                                local currentHRPPos = hrp.Position
+                                local dist = (adjustedTarget - currentHRPPos).Magnitude
                                 local speed = 69
-                                local duration = math.max(0.1, dist / speed)
+                                local duration = math.max(0.2, dist / speed)
+
+                                print("Killaura: Gehe zu Gegner " .. i .. "/" .. #enemiesToHit .. " (Distanz: " .. math.floor(dist) .. ")")
 
                                 -- Equip sword if tool switch is on
                                 if Settings.AutoToolSwitch then
@@ -1901,29 +1911,28 @@ task.spawn(function()
                                 -- Heartbeat-like lock during this specific tween
                                 local startTween = tick()
                                 while not completed and ScriptRunning and (tick() - startTween < duration + 0.5) do
-                                    hrp.AssemblyLinearVelocity = Vector3.zero
-                                    hrp.AssemblyAngularVelocity = Vector3.zero
-                                    ka_platform.AssemblyLinearVelocity = Vector3.zero
-                                    ka_platform.AssemblyAngularVelocity = Vector3.zero
+                                    -- Velocity lock is already in the outer heartbeat
                                     task.wait()
                                 end
                                 if conn then conn:Disconnect() end
                                 
-                                -- Stay longer to ensure hit (requested by user)
-                                task.wait(0.2)
+                                -- Stay longer to ensure hit
+                                task.wait(0.3)
                                 
-                                -- Mark as hit visually by changing highlight color or transparency
+                                -- Mark as hit visually
                                 if activeMarkers[monster] then
                                     pcall(function()
-                                        activeMarkers[monster].FillColor = Color3.fromRGB(0, 255, 0) -- Green for hit
-                                        activeMarkers[monster].FillTransparency = 0.7
+                                        activeMarkers[monster].FillColor = Color3.fromRGB(0, 255, 0)
+                                        activeMarkers[monster].FillTransparency = 0.5
                                     end)
                                 end
                             end
                         end
                         
-                        -- Final cleanup of markers after all are hit
-                        task.wait(0.1)
+                        print("Killaura: Sequenz beendet")
+                        task.wait(0.2)
+                        
+                        -- Clear markers
                         for monster, marker in pairs(activeMarkers) do
                             if marker then pcall(function() marker:Destroy() end) end
                         end
