@@ -1271,7 +1271,8 @@ task.spawn(function()
                             -- Bloom gefunden!
                             local bloomPos = nil
                             local successPos, result = pcall(function() return targetBloom.Position end)
-                            if successPos and typeof(result) == "Vector3" then
+                            -- basic check if result is a Vector3 (has X property) to avoid typeof nil error
+                            if successPos and result and result.X then
                                 bloomPos = result
                             else
                                 targetBloom = nil
@@ -1290,37 +1291,37 @@ task.spawn(function()
                                 if targetBloom ~= lastBloom then
                                     lastBloom = targetBloom
                                     local targetPos = Vector3.new(bloomPos.X, bloomHeight, bloomPos.Z)
-                                local dist = (targetPos - HumanoidRootPart.Position).Magnitude
-                                local duration = dist / speed
-                                local targetCFrame = CFrame.new(targetPos) * upRotation
-                                
-                                if tick() >= AutoSlime_blockUntil then
-                                    cancelActiveAutoSlime()
-                                    local tween = TweenService:Create(HumanoidRootPart, TweenInfo.new(duration, Enum.EasingStyle.Linear), {CFrame = targetCFrame})
-                                    local platTween = TweenService:Create(platform, TweenInfo.new(duration, Enum.EasingStyle.Linear), {CFrame = CFrame.new(targetPos - Vector3.new(0, 3, 0))})
+                                    local dist = (targetPos - HumanoidRootPart.Position).Magnitude
+                                    local duration = dist / speed
+                                    local targetCFrame = CFrame.new(targetPos) * upRotation
                                     
-                                    tween:Play()
-                                    platTween:Play()
-                                    AutoSlime_activeTween = tween
-                                    AutoSlime_activePlatTween = platTween
-                                    
-                                    AutoSlime_activeConn = game:GetService("RunService").Heartbeat:Connect(function()
-                                        if not Settings.AutoSlimeKill or not AutoSlime_activeTween or game.PlaceId ~= 17579225831 then
-                                            if AutoSlime_activeConn then AutoSlime_activeConn:Disconnect() AutoSlime_activeConn = nil end
-                                            return
-                                        end
-                                        HumanoidRootPart.AssemblyLinearVelocity = Vector3.zero
-                                        HumanoidRootPart.AssemblyAngularVelocity = Vector3.zero
-                                        if platform and platform:IsA("BasePart") then
-                                            platform.AssemblyLinearVelocity = Vector3.zero
-                                            platform.AssemblyAngularVelocity = Vector3.zero
-                                        end
-                                    end)
-                                    
-                                    tween.Completed:Wait()
-                                    if AutoSlime_activeConn then AutoSlime_activeConn:Disconnect() AutoSlime_activeConn = nil end
-                                    AutoSlime_activeTween = nil
-                                    AutoSlime_activePlatTween = nil
+                                    if tick() >= AutoSlime_blockUntil then
+                                        cancelActiveAutoSlime()
+                                        local tween = TweenService:Create(HumanoidRootPart, TweenInfo.new(duration, Enum.EasingStyle.Linear), {CFrame = targetCFrame})
+                                        local platTween = TweenService:Create(platform, TweenInfo.new(duration, Enum.EasingStyle.Linear), {CFrame = CFrame.new(targetPos - Vector3.new(0, 3, 0))})
+                                        
+                                        tween:Play()
+                                        platTween:Play()
+                                        AutoSlime_activeTween = tween
+                                        AutoSlime_activePlatTween = platTween
+                                        
+                                        AutoSlime_activeConn = game:GetService("RunService").Heartbeat:Connect(function()
+                                            if not Settings.AutoSlimeKill or not AutoSlime_activeTween or game.PlaceId ~= 17579225831 then
+                                                if AutoSlime_activeConn then AutoSlime_activeConn:Disconnect() AutoSlime_activeConn = nil end
+                                                return
+                                            end
+                                            HumanoidRootPart.AssemblyLinearVelocity = Vector3.zero
+                                            HumanoidRootPart.AssemblyAngularVelocity = Vector3.zero
+                                            if platform and platform:IsA("BasePart") then
+                                                platform.AssemblyLinearVelocity = Vector3.zero
+                                                platform.AssemblyAngularVelocity = Vector3.zero
+                                            end
+                                        end)
+                                        
+                                        tween.Completed:Wait()
+                                        if AutoSlime_activeConn then AutoSlime_activeConn:Disconnect() AutoSlime_activeConn = nil end
+                                        AutoSlime_activeTween = nil
+                                        AutoSlime_activePlatTween = nil
 
                                     -- Sprinkler platzieren
                                     pcall(function()
