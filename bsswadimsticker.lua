@@ -1779,7 +1779,7 @@ task.spawn(function()
                 local trigger = Settings.KillAuraTrigger
                 countLabel.Text = string.format("gegnär: %d/%d", enemyCount, trigger)
 
-                if enemyCount > 0 then
+                if enemyCount >= trigger then
                     ringStroke.Color = Color3.fromRGB(255, 0, 0)
                     countLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
                 else
