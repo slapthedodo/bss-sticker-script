@@ -943,6 +943,7 @@ task.spawn(function()
     local platform = nil
     local collectingTokensNow = false
     local sprinklerPlaced = false
+    local lastBloom = nil
 
     while ScriptRunning do
         if Settings.AutoSlimeKill and game.PlaceId == 17579225831 then
@@ -1255,12 +1256,15 @@ task.spawn(function()
                                 AutoSlime_activeTween = nil
                                 AutoSlime_activePlatTween = nil
 
-                                -- 1. Planter (Sprinkler) platzieren
-                                pcall(function()
-                                    local args = {[1] = {["Name"] = "Sprinkler Builder"}}
-                                    game:GetService("ReplicatedStorage").Events.PlayerActivesCommand:FireServer(unpack(args))
-                                end)
-                                task.wait(0.2)
+                                -- 1. Planter (Sprinkler) platzieren (nur beim ersten Mal für diesen Bloom)
+                                if targetBloom ~= lastBloom then
+                                    lastBloom = targetBloom
+                                    pcall(function()
+                                        local args = {[1] = {["Name"] = "Sprinkler Builder"}}
+                                        game:GetService("ReplicatedStorage").Events.PlayerActivesCommand:FireServer(unpack(args))
+                                    end)
+                                    task.wait(0.2)
+                                end
 
                                 -- 2. Im Viereck rumrennen
                                 local offset = 12
@@ -1316,6 +1320,8 @@ task.spawn(function()
                                     AutoSlime_activePlatTween = nil
                                 end
                             end
+                        else
+                            lastBloom = nil
                         end
                     end
 
