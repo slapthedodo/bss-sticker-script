@@ -1101,7 +1101,7 @@ task.spawn(function()
                             local collectTarget = Vector3.new(collectPos.X, collectPos.Y, collectPos.Z)
                             local dist = (collectTarget - HumanoidRootPart.Position).Magnitude
                             local speed = 69
-                            local duration = math.max(0.05, dist / speed)
+                            local duration = math.max(0.02, dist / speed)
 
                             local targetCFrame = CFrame.new(collectTarget) * upRotation
                             if tick() < AutoSlime_blockUntil then
