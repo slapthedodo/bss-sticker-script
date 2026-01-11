@@ -41,7 +41,8 @@ local Settings = {
     KillAuraVisual = false,
     KillAuraRange = 50,
     KillAuraTrigger = 5,
-    KillAuraCooldown = 3
+    KillAuraCooldown = 3,
+    BloomLevel = 5
 }
 
 -- Global states for equipped/owned items
@@ -264,6 +265,7 @@ local function LoadConfig()
             if result.KillAuraRange ~= nil then Settings.KillAuraRange = result.KillAuraRange end
             if result.KillAuraTrigger ~= nil then Settings.KillAuraTrigger = result.KillAuraTrigger end
             if result.KillAuraCooldown ~= nil then Settings.KillAuraCooldown = result.KillAuraCooldown end
+            if result.BloomLevel ~= nil then Settings.BloomLevel = result.BloomLevel end
         end
     end
 end
@@ -689,6 +691,19 @@ retroTab:CreateSlider({
     Flag = "KillAuraCooldown",
     Callback = function(Value)
         Settings.KillAuraCooldown = Value
+        SaveConfig()
+    end,
+})
+
+retroTab:CreateSlider({
+    Name = "bloom level slider",
+    Range = {1, 12},
+    Increment = 1,
+    Suffix = "lvl",
+    CurrentValue = Settings.BloomLevel,
+    Flag = "BloomLevel",
+    Callback = function(Value)
+        Settings.BloomLevel = Value
         SaveConfig()
     end,
 })
@@ -1168,8 +1183,138 @@ task.spawn(function()
                         end
                     end
 
-                    -- Nach Token-Sammeln: Falls keine Slimes gefunden, gehe zur Fallback Position
+                    -- Nach Token-Sammeln: Suche nach Brick Blooms falls keine Slimes da sind
+                    local targetBloom = nil
                     if not TargetSlimeBlob then
+                        pcall(function()
+                            if workspace:FindFirstChild("Happenings") and workspace.Happenings:FindFirstChild("BrickBlooms") then
+                                for _, bloom in pairs(workspace.Happenings.BrickBlooms:GetChildren()) do
+                                    local centerPart = bloom:FindFirstChild("CenterPart")
+                                    if centerPart then
+                                        local attachment = centerPart:FindFirstChild("Attachment")
+                                        local gui = attachment and attachment:FindFirstChild("Gui")
+                                        local nameRow = gui and gui:FindFirstChild("NameRow")
+                                        local label = nameRow and nameRow:FindFirstChild("TextLabel")
+                                        if label and label.Text then
+                                            local text = label.Text
+                                            local level = tonumber(text:match("Lvl%s+(%d+)"))
+                                            if level and level <= Settings.BloomLevel then
+                                                targetBloom = centerPart
+                                                break
+                                            end
+                                        end
+                                    end
+                                end
+                            end
+                        end)
+
+                        if targetBloom then
+                            -- Bloom gefunden!
+                            if Settings.AutoToolSwitch and currentEquippedSword ~= nil and tick() - lastEquipTime > 0.5 then
+                                EquipTool("FarmingTool")
+                            end
+
+                            local bloomPos = targetBloom.Position
+                            -- Wir nutzen die Bloom Y-Position für das Tweening
+                            local targetPos = Vector3.new(bloomPos.X, bloomPos.Y + 3, bloomPos.Z)
+                            
+                            local dist = (targetPos - HumanoidRootPart.Position).Magnitude
+                            local speed = 69
+                            local duration = dist / speed
+                            local targetCFrame = CFrame.new(targetPos) * upRotation
+                            
+                            if tick() >= AutoSlime_blockUntil then
+                                cancelActiveAutoSlime()
+                                local tween = TweenService:Create(HumanoidRootPart, TweenInfo.new(duration, Enum.EasingStyle.Linear), {CFrame = targetCFrame})
+                                local platTween = TweenService:Create(platform, TweenInfo.new(duration, Enum.EasingStyle.Linear), {CFrame = CFrame.new(targetPos - Vector3.new(0, 3, 0))})
+                                
+                                tween:Play()
+                                platTween:Play()
+                                AutoSlime_activeTween = tween
+                                AutoSlime_activePlatTween = platTween
+                                
+                                AutoSlime_activeConn = game:GetService("RunService").Heartbeat:Connect(function()
+                                    if not Settings.AutoSlimeKill or not AutoSlime_activeTween or game.PlaceId ~= 17579225831 then
+                                        if AutoSlime_activeConn then AutoSlime_activeConn:Disconnect() AutoSlime_activeConn = nil end
+                                        return
+                                    end
+                                    HumanoidRootPart.AssemblyLinearVelocity = Vector3.zero
+                                    HumanoidRootPart.AssemblyAngularVelocity = Vector3.zero
+                                    if platform and platform:IsA("BasePart") then
+                                        platform.AssemblyLinearVelocity = Vector3.zero
+                                        platform.AssemblyAngularVelocity = Vector3.zero
+                                    end
+                                end)
+                                
+                                tween.Completed:Wait()
+                                if AutoSlime_activeConn then AutoSlime_activeConn:Disconnect() AutoSlime_activeConn = nil end
+                                AutoSlime_activeTween = nil
+                                AutoSlime_activePlatTween = nil
+
+                                -- 1. Planter (Sprinkler) platzieren
+                                pcall(function()
+                                    local args = {[1] = {["Name"] = "Sprinkler Builder"}}
+                                    game:GetService("ReplicatedStorage").Events.PlayerActivesCommand:FireServer(unpack(args))
+                                end)
+                                task.wait(0.2)
+
+                                -- 2. Im Viereck rumrennen
+                                local offset = 12
+                                local squarePoints = {
+                                    Vector3.new(bloomPos.X + offset, targetPos.Y, bloomPos.Z + offset),
+                                    Vector3.new(bloomPos.X - offset, targetPos.Y, bloomPos.Z + offset),
+                                    Vector3.new(bloomPos.X - offset, targetPos.Y, bloomPos.Z - offset),
+                                    Vector3.new(bloomPos.X + offset, targetPos.Y, bloomPos.Z - offset)
+                                }
+
+                                for _, p in ipairs(squarePoints) do
+                                    -- Abbruch falls Slime erscheint oder Toggle aus
+                                    local foundSlime = false
+                                    if workspace:FindFirstChild("Monsters") then
+                                        for _, monsterFolder in pairs(workspace.Monsters:GetChildren()) do
+                                            local folderName = tostring(monsterFolder.Name)
+                                            if folderName:match("^Zombie") or folderName:match("^Slime") then
+                                                foundSlime = true
+                                                break
+                                            end
+                                        end
+                                    end
+                                    if foundSlime or not Settings.AutoSlimeKill then break end
+
+                                    local d = (p - HumanoidRootPart.Position).Magnitude
+                                    local dur = d / speed
+                                    local t = TweenService:Create(HumanoidRootPart, TweenInfo.new(dur, Enum.EasingStyle.Linear), {CFrame = CFrame.new(p) * upRotation})
+                                    local pt = TweenService:Create(platform, TweenInfo.new(dur, Enum.EasingStyle.Linear), {CFrame = CFrame.new(p - Vector3.new(0, 3, 0))})
+                                    
+                                    t:Play()
+                                    pt:Play()
+                                    AutoSlime_activeTween = t
+                                    AutoSlime_activePlatTween = pt
+                                    
+                                    AutoSlime_activeConn = game:GetService("RunService").Heartbeat:Connect(function()
+                                        if not Settings.AutoSlimeKill or not AutoSlime_activeTween or game.PlaceId ~= 17579225831 then
+                                            if AutoSlime_activeConn then AutoSlime_activeConn:Disconnect() AutoSlime_activeConn = nil end
+                                            return
+                                        end
+                                        HumanoidRootPart.AssemblyLinearVelocity = Vector3.zero
+                                        HumanoidRootPart.AssemblyAngularVelocity = Vector3.zero
+                                        if platform and platform:IsA("BasePart") then
+                                            platform.AssemblyLinearVelocity = Vector3.zero
+                                            platform.AssemblyAngularVelocity = Vector3.zero
+                                        end
+                                    end)
+                                    
+                                    t.Completed:Wait()
+                                    if AutoSlime_activeConn then AutoSlime_activeConn:Disconnect() AutoSlime_activeConn = nil end
+                                    AutoSlime_activeTween = nil
+                                    AutoSlime_activePlatTween = nil
+                                end
+                            end
+                        end
+                    end
+
+                    -- Nach Bloom-Check: Falls immer noch kein Slime gefunden und kein Bloom gefunden wurde, gehe zur Fallback Position
+                    if not TargetSlimeBlob and not targetBloom then
                         if Settings.FarmPollen and CurrentRound >= 0 and CurrentRound <= 8 then
                             -- Farm Pollen Logic for Rounds 0-8
                             if Settings.AutoToolSwitch and currentEquippedSword ~= nil and tick() - lastEquipTime > 0.5 then
