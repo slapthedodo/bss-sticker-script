@@ -1829,47 +1829,51 @@ task.spawn(function()
                             hrp.AssemblyAngularVelocity = Vector3.zero
                         end)
 
-                        -- Keep track of enemies to hit
+                        -- Keep track of enemies to hit (ensure they are still valid)
                         local enemiesToHit = {}
                         for monster, _ in pairs(currentEnemies) do
-                            table.insert(enemiesToHit, monster)
+                            if monster and monster.Parent then
+                                table.insert(enemiesToHit, monster)
+                            end
                         end
+
+                        print("Killaura: Starte Sequenz für " .. #enemiesToHit .. " Gegner")
 
                         -- Heartbeat connection for the whole session to prevent falling
                         local ka_conn = game:GetService("RunService").Heartbeat:Connect(function()
                             if hrp and hrp.Parent then
                                 hrp.AssemblyLinearVelocity = Vector3.zero
                                 hrp.AssemblyAngularVelocity = Vector3.zero
-                                -- Fallback: keep platform under player if not tweening (safety)
-                                if not completed then -- Wait, 'completed' is local to the for loop...
-                                    -- We'll just rely on the tweens mostly, but velocity zero is key.
-                                end
                             end
                             if ka_platform and ka_platform.Parent then
                                 ka_platform.AssemblyLinearVelocity = Vector3.zero
                                 ka_platform.AssemblyAngularVelocity = Vector3.zero
                             end
                             pcall(function()
-                                if character:FindFirstChildOfClass("Humanoid") then
+                                if character and character:FindFirstChildOfClass("Humanoid") then
                                     character:FindFirstChildOfClass("Humanoid").PlatformStand = true
                                 end
                             end)
                         end)
 
-                        for _, monster in ipairs(enemiesToHit) do
-                            if not ScriptRunning or not Settings.KillAuraVisual then break end
+                        for i, monster in ipairs(enemiesToHit) do
+                            if not ScriptRunning or not Settings.KillAuraVisual then
+                                break
+                            end
                             
                             local targetPart = nil
                             pcall(function()
-                                targetPart = monster:FindFirstChild("Torso") or monster:FindFirstChild("Blob2") or monster:FindFirstChildWhichIsA("BasePart")
+                                if monster and monster.Parent then
+                                    targetPart = monster:FindFirstChild("Torso") or monster:FindFirstChild("Blob2") or monster:FindFirstChildWhichIsA("BasePart")
+                                end
                             end)
 
                             if targetPart then
                                 local targetPos = targetPart.Position
                                 local adjustedTarget = Vector3.new(targetPos.X, targetY, targetPos.Z)
                                 local dist = (adjustedTarget - hrp.Position).Magnitude
-                                local speed = 120
-                                local duration = math.max(0.05, dist / speed)
+                                local speed = 69
+                                local duration = math.max(0.1, dist / speed)
 
                                 -- Equip sword if tool switch is on
                                 if Settings.AutoToolSwitch then
@@ -1890,10 +1894,15 @@ task.spawn(function()
                                 
                                 -- Wait for tween to finish
                                 local completed = false
-                                local conn = tween.Completed:Connect(function() completed = true end)
+                                local conn = nil
+                                conn = tween.Completed:Connect(function()
+                                    completed = true
+                                    if conn then conn:Disconnect() end
+                                end)
                                 
-                                -- Small heartbeat loop to keep physics disabled
-                                while not completed and ScriptRunning do
+                                -- Heartbeat-like lock during this specific tween
+                                local startTween = tick()
+                                while not completed and ScriptRunning and (tick() - startTween < duration + 0.5) do
                                     hrp.AssemblyLinearVelocity = Vector3.zero
                                     hrp.AssemblyAngularVelocity = Vector3.zero
                                     ka_platform.AssemblyLinearVelocity = Vector3.zero
@@ -1902,17 +1911,26 @@ task.spawn(function()
                                 end
                                 if conn then conn:Disconnect() end
                                 
-                                -- Stay a tiny bit to ensure hit
-                                task.wait(0.1)
+                                -- Stay longer to ensure hit (requested by user)
+                                task.wait(0.2)
                                 
-                                -- Remove highlight after hit (visual confirmation)
+                                -- Mark as hit visually by changing highlight color or transparency
                                 if activeMarkers[monster] then
-                                    pcall(function() activeMarkers[monster]:Destroy() end)
-                                    activeMarkers[monster] = nil
+                                    pcall(function()
+                                        activeMarkers[monster].FillColor = Color3.fromRGB(0, 255, 0) -- Green for hit
+                                        activeMarkers[monster].FillTransparency = 0.7
+                                    end)
                                 end
                             end
                         end
                         
+                        -- Final cleanup of markers after all are hit
+                        task.wait(0.1)
+                        for monster, marker in pairs(activeMarkers) do
+                            if marker then pcall(function() marker:Destroy() end) end
+                        end
+                        activeMarkers = {}
+
                         if ka_conn then ka_conn:Disconnect() end
                         KillAura_lastExecution = tick()
                         KillAura_isExecuting = false
