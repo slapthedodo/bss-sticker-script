@@ -44,7 +44,8 @@ local Settings = {
     KillAuraCooldown = 3,
     BloomLevel = 5,
     CameraMaxZoomDistance = 128,
-    MaxAxisFieldOfView = 70
+    MaxAxisFieldOfView = 70,
+    CollectTokens = true
 }
 
 -- Global states for equipped/owned items
@@ -270,6 +271,7 @@ local function LoadConfig()
             if result.BloomLevel ~= nil then Settings.BloomLevel = result.BloomLevel end
             if result.CameraMaxZoomDistance ~= nil then Settings.CameraMaxZoomDistance = result.CameraMaxZoomDistance end
             if result.MaxAxisFieldOfView ~= nil then Settings.MaxAxisFieldOfView = result.MaxAxisFieldOfView end
+            if result.CollectTokens ~= nil then Settings.CollectTokens = result.CollectTokens end
         end
     end
 end
@@ -606,6 +608,16 @@ retroTab:CreateToggle({
     Flag = "AutoSlimeKill",
     Callback = function(Value)
         Settings.AutoSlimeKill = Value
+        SaveConfig()
+    end,
+})
+
+retroTab:CreateToggle({
+    Name = "collect tokens",
+    CurrentValue = Settings.CollectTokens,
+    Flag = "CollectTokens",
+    Callback = function(Value)
+        Settings.CollectTokens = Value
         SaveConfig()
     end,
 })
@@ -1075,11 +1087,11 @@ task.spawn(function()
                 end
 
                 -- Wenn kein Slime gefunden: Sammle Collectibles 'C' ohne zurückzufliegen
-                if not TargetSlimeBlob and not collectingTokensNow then
+                if not TargetSlimeBlob and not collectingTokensNow and Settings.CollectTokens then
                     collectingTokensNow = true
                     local collectingTokens = true
                     local visitedCollects = {}
-                    while collectingTokens and Settings.AutoSlimeKill and game.PlaceId == 17579225831 do
+                    while collectingTokens and Settings.AutoSlimeKill and Settings.CollectTokens and game.PlaceId == 17579225831 do
                         -- Prüfe nochmal auf neue Slimes (Priorität)
                         local CheckSlimeBlob = nil
                         local checkZDiff = math.huge
@@ -1118,8 +1130,8 @@ task.spawn(function()
                                 end
                         end
                         
-                        if CheckSlimeBlob then
-                            -- Slime gefunden, raus aus Token-Loop
+                        if CheckSlimeBlob or not Settings.CollectTokens then
+                            -- Slime gefunden oder Toggle aus, raus aus Token-Loop
                             TargetSlimeBlob = CheckSlimeBlob
                             collectingTokens = false
                             collectingTokensNow = false
@@ -1195,7 +1207,7 @@ task.spawn(function()
                                 AutoSlime_activeTween = tween
                                 AutoSlime_activePlatTween = platTween
                                 AutoSlime_activeConn = game:GetService("RunService").Heartbeat:Connect(function()
-                                    if not Settings.AutoSlimeKill or not AutoSlime_activeTween or game.PlaceId ~= 17579225831 then
+                                    if not Settings.AutoSlimeKill or not Settings.CollectTokens or not AutoSlime_activeTween or game.PlaceId ~= 17579225831 then
                                         if AutoSlime_activeConn then AutoSlime_activeConn:Disconnect() AutoSlime_activeConn = nil end
                                         return
                                     end
