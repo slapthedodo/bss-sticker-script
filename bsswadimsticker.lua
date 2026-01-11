@@ -40,7 +40,8 @@ local Settings = {
     AutoToolSwitch = false,
     KillAuraVisual = false,
     KillAuraRange = 50,
-    KillAuraTrigger = 5
+    KillAuraTrigger = 5,
+    KillAuraCooldown = 3
 }
 
 -- Global states for equipped/owned items
@@ -259,6 +260,7 @@ local function LoadConfig()
             if result.KillAuraVisual ~= nil then Settings.KillAuraVisual = result.KillAuraVisual end
             if result.KillAuraRange ~= nil then Settings.KillAuraRange = result.KillAuraRange end
             if result.KillAuraTrigger ~= nil then Settings.KillAuraTrigger = result.KillAuraTrigger end
+            if result.KillAuraCooldown ~= nil then Settings.KillAuraCooldown = result.KillAuraCooldown end
         end
     end
 end
@@ -665,6 +667,19 @@ retroTab:CreateSlider({
     Flag = "KillAuraTrigger",
     Callback = function(Value)
         Settings.KillAuraTrigger = Value
+        SaveConfig()
+    end,
+})
+
+retroTab:CreateSlider({
+    Name = "killaura cooldown",
+    Range = {2, 10},
+    Increment = 1,
+    Suffix = "seconds",
+    CurrentValue = Settings.KillAuraCooldown,
+    Flag = "KillAuraCooldown",
+    Callback = function(Value)
+        Settings.KillAuraCooldown = Value
         SaveConfig()
     end,
 })
@@ -1797,7 +1812,7 @@ task.spawn(function()
                     countLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
 
                     -- EXECUTION LOGIC
-                    if tick() - KillAura_lastExecution > 3 and not KillAura_isExecuting then
+                    if tick() - KillAura_lastExecution > Settings.KillAuraCooldown and not KillAura_isExecuting then
                         local TweenService = game:GetService("TweenService")
                         local targetY = 283
                         local upRotation = CFrame.Angles(math.rad(90), 0, 0)
