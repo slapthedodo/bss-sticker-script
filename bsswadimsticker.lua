@@ -39,12 +39,12 @@ local Settings = {
     FarmPollen = false,
     AutoToolSwitch = false,
     KillAuraVisual = false,
-    KillAuraRange = 50,
-    KillAuraTrigger = 5,
-    KillAuraCooldown = 3,
-    BloomLevel = 5,
-    CameraMaxZoomDistance = 128,
-    MaxAxisFieldOfView = 70,
+    KillAuraRange = 35,
+    KillAuraTrigger = 2,
+    KillAuraCooldown = 1,
+    BloomLevel = 8,
+    CameraMaxZoomDistance = 150,
+    MaxAxisFieldOfView = 90,
     CollectTokens = true
 }
 
