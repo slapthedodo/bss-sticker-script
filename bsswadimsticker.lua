@@ -650,7 +650,7 @@ retroTab:CreateToggle({
 
 retroTab:CreateSlider({
     Name = "killaura ranges lider",
-    Range = {20, 80},
+    Range = {20, 70},
     Increment = 1,
     Suffix = "studs",
     CurrentValue = Settings.KillAuraRange,
@@ -1897,7 +1897,7 @@ task.spawn(function()
                                 local currentHRPPos = hrp.Position
                                 local dist = (adjustedTarget - currentHRPPos).Magnitude
                                 local speed = 120
-                                local duration = math.max(0.1, dist / speed)
+                                local duration = math.max(0.05, dist / speed)
 
                                 print("Killaura: Gehe zu Gegner " .. i .. "/" .. #enemiesToHit .. " (Distanz: " .. math.floor(dist) .. ")")
 
