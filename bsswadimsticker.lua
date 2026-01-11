@@ -1878,7 +1878,7 @@ task.spawn(function()
                                 -- Use current position for distance
                                 local currentHRPPos = hrp.Position
                                 local dist = (adjustedTarget - currentHRPPos).Magnitude
-                                local speed = 69
+                                local speed = 110
                                 local duration = math.max(0.2, dist / speed)
 
                                 print("Killaura: Gehe zu Gegner " .. i .. "/" .. #enemiesToHit .. " (Distanz: " .. math.floor(dist) .. ")")
@@ -1917,7 +1917,7 @@ task.spawn(function()
                                 if conn then conn:Disconnect() end
                                 
                                 -- Stay longer to ensure hit
-                                task.wait(0.15)
+                                task.wait(0.1)
                                 
                                 -- Mark as hit visually
                                 if activeMarkers[monster] then
