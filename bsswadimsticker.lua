@@ -1750,9 +1750,10 @@ task.spawn(function()
                                         local dist = (desc.Position - hrp.Position).Magnitude
                                         if dist <= currentRange then
                                             enemyCount = enemyCount + 1
-                                            local monster = monsterFolder
-                                            currentEnemies[monster] = true
+                                            local targetPart = desc
+                                            currentEnemies[targetPart] = true
                                             
+                                            local monster = monsterFolder
                                             if not activeMarkers[monster] then
                                                 pcall(function()
                                                     local h = Instance.new("Highlight")
@@ -1829,10 +1830,10 @@ task.spawn(function()
                             hrp.AssemblyAngularVelocity = Vector3.zero
                         end)
 
-                        -- Keep track of enemies to hit
+                        -- Keep track of parts to hit
                         local enemiesToHit = {}
-                        for monster, _ in pairs(currentEnemies) do
-                            table.insert(enemiesToHit, monster)
+                        for part, _ in pairs(currentEnemies) do
+                            table.insert(enemiesToHit, part)
                         end
 
                         -- Heartbeat connection for the whole session to prevent falling
@@ -1856,20 +1857,15 @@ task.spawn(function()
                             end)
                         end)
 
-                        for _, monster in ipairs(enemiesToHit) do
+                        for _, targetPart in ipairs(enemiesToHit) do
                             if not ScriptRunning or not Settings.KillAuraVisual then break end
                             
-                            local targetPart = nil
-                            pcall(function()
-                                targetPart = monster:FindFirstChild("Torso") or monster:FindFirstChild("Blob2") or monster:FindFirstChildWhichIsA("BasePart")
-                            end)
-
-                            if targetPart then
+                            if targetPart and targetPart.Parent then
                                 local targetPos = targetPart.Position
                                 local adjustedTarget = Vector3.new(targetPos.X, targetY, targetPos.Z)
                                 local dist = (adjustedTarget - hrp.Position).Magnitude
                                 local speed = 69
-                                local duration = math.max(0.05, dist / speed)
+                                local duration = dist / speed
 
                                 -- Equip sword if tool switch is on
                                 if Settings.AutoToolSwitch then
@@ -1882,31 +1878,22 @@ task.spawn(function()
                                     end
                                 end
 
-                                local tween = TweenService:Create(hrp, TweenInfo.new(duration, Enum.EasingStyle.Linear), {CFrame = CFrame.new(adjustedTarget) * upRotation})
-                                local platTween = TweenService:Create(ka_platform, TweenInfo.new(duration, Enum.EasingStyle.Linear), {CFrame = CFrame.new(adjustedTarget - Vector3.new(0, 3, 0))})
+                                local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear)
+                                local targetCFrame = CFrame.new(adjustedTarget) * upRotation
+                                local platTargetCFrame = CFrame.new(adjustedTarget - Vector3.new(0, 3, 0))
+
+                                local tween = TweenService:Create(hrp, tweenInfo, {CFrame = targetCFrame})
+                                local platTween = TweenService:Create(ka_platform, tweenInfo, {CFrame = platTargetCFrame})
                                 
                                 tween:Play()
                                 platTween:Play()
                                 
-                                -- Wait for tween to finish
-                                local completed = false
-                                local conn = tween.Completed:Connect(function() completed = true end)
-                                
-                                -- Small heartbeat loop to keep physics disabled
-                                while not completed and ScriptRunning do
-                                    hrp.AssemblyLinearVelocity = Vector3.zero
-                                    hrp.AssemblyAngularVelocity = Vector3.zero
-                                    ka_platform.AssemblyLinearVelocity = Vector3.zero
-                                    ka_platform.AssemblyAngularVelocity = Vector3.zero
-                                    task.wait()
-                                end
-                                if conn then conn:Disconnect() end
-                                
-                                -- Stay a tiny bit to ensure hit
+                                tween.Completed:Wait()
                                 task.wait(0.1)
                                 
                                 -- Remove highlight after hit (visual confirmation)
-                                if activeMarkers[monster] then
+                                local monster = targetPart.Parent
+                                if monster and activeMarkers[monster] then
                                     pcall(function() activeMarkers[monster]:Destroy() end)
                                     activeMarkers[monster] = nil
                                 end
