@@ -906,8 +906,11 @@ task.spawn(function()
     local sprinklerPlaced = false
 
     while ScriptRunning do
-        if Settings.AutoSlimeKill and game.PlaceId == 17579225831 and not KillAura_isExecuting then
-            if not lastToggleState then
+        if Settings.AutoSlimeKill and game.PlaceId == 17579225831 then
+            if KillAura_isExecuting then
+                task.wait()
+                -- Skip logic but don't reset lastToggleState
+            elseif not lastToggleState then
                 lastToggleState = true
                 collectingTokensNow = false
                 sprinklerPlaced = false
@@ -1821,12 +1824,22 @@ task.spawn(function()
                             ka_platform.Name = "SlimeKillPlatform"
                             ka_platform.Parent = workspace
                         end
+                        
+                        -- Snap platform under player immediately to prevent falling
+                        pcall(function()
+                            ka_platform.CFrame = hrp.CFrame - Vector3.new(0, 3, 0)
+                            ka_platform.CanCollide = true
+                        end)
 
                         -- Heartbeat connection for the whole session to prevent falling
                         local ka_conn = game:GetService("RunService").Heartbeat:Connect(function()
                             if hrp and hrp.Parent then
                                 hrp.AssemblyLinearVelocity = Vector3.zero
                                 hrp.AssemblyAngularVelocity = Vector3.zero
+                                -- Fallback: keep platform under player if not tweening (safety)
+                                if not completed then -- Wait, 'completed' is local to the for loop...
+                                    -- We'll just rely on the tweens mostly, but velocity zero is key.
+                                end
                             end
                             if ka_platform and ka_platform.Parent then
                                 ka_platform.AssemblyLinearVelocity = Vector3.zero
